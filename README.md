@@ -5,10 +5,31 @@
 ![Platform](https://img.shields.io/badge/Platform-Android%2015-green)
 ![Language](https://img.shields.io/badge/Language-Java-orange)
 ![License](https://img.shields.io/badge/License-Proprietary-blue)
+![Version](https://img.shields.io/badge/Version-2.0.0-blue)
 
 ## 概要
 
 VISIONOID MAG PLOTTERは、ドローンショー実施前の現場磁場環境を調査するためのAndroidアプリケーションです。地面からの磁場ノイズを計測・可視化し、ドローンのコンパスに影響を与える危険エリアをヒートマップで特定します。
+
+## 🆕 v2.0.0 新機能
+
+### 🗺️ GeoJSONマップレイヤー
+計測画面上に以下のレイヤーをオーバーレイ表示できるようになりました：
+
+| レイヤー | 説明 | 色 |
+|---------|------|-----|
+| **DID（人口集中地区）** | 国土地理院の人口集中地区データ（日本全国） | 🟠 オレンジ |
+| **空港等周辺制限区域** | 空港周辺の飛行制限エリア | 🔴 赤 |
+| **飛行禁止区域** | 重要施設周辺など飛行禁止エリア | 🔵 青 |
+
+これらのレイヤーは**改正航空法**に基づくドローン飛行規制区域を視覚化し、安全な飛行計画の立案をサポートします。
+
+### レイヤー操作
+- 計測画面右上のメニューから「レイヤー選択」でON/OFF切り替え
+- 各レイヤーの表示/非表示を個別に制御可能
+- レイヤー有効化時に該当エリアへの自動ズーム
+
+---
 
 ## 主な機能
 
@@ -26,6 +47,12 @@ VISIONOID MAG PLOTTERは、ドローンショー実施前の現場磁場環境�
 - 端末内蔵磁気センサーによる3軸計測
 - 総磁場強度（μT）のリアルタイム表示
 - ノイズ値（基準値との偏差）の算出
+
+### 🗺️ マップレイヤー（v2.0.0〜）
+- DID（人口集中地区）レイヤー表示
+- 空港等周辺制限区域レイヤー表示
+- 飛行禁止区域レイヤー表示
+- GeoJSON形式のカスタムレイヤー対応
 
 ## 🧲 磁場ノイズとドローンの関係（やさしい解説）
 
@@ -153,6 +180,35 @@ double noise = Math.abs(magField - referenceMag);
   - 🟡 **黄**: 注意（安全閾値 ≤ ノイズ < 危険閾値）
   - 🔴 **赤**: 危険（ノイズ ≥ 危険閾値）
 
+### 🗺️ GeoJSONレイヤー（v2.0.0〜）
+
+マップ上にGeoJSON形式のポリゴンレイヤーを表示できます。
+
+```java
+// GeoJSONパーサーでPolygonを生成
+List<Polygon> polygons = GeoJsonParser.parse(
+    geoJsonString,
+    fillColor,
+    strokeColor,
+    displayStyle
+);
+
+// MapLayerManagerでレイヤーを追加
+mapLayerManager.addLayer(LayerType.DID, geoJsonData);
+```
+
+**対応データ形式**:
+- FeatureCollection
+- Feature
+- Polygon / MultiPolygon
+
+**レイヤータイプ**:
+| タイプ | アセットパス | データソース |
+|--------|-------------|--------------|
+| DID | `layers/did_japan.geojson` | 国土地理院 |
+| 空港制限 | `layers/airport_restriction.geojson` | カスタム |
+| 飛行禁止 | `layers/no_fly_zone.geojson` | カスタム |
+
 ### 📸 エクスポート
 - 地図画面のスクリーンショット保存
 
@@ -199,7 +255,7 @@ double noise = Math.abs(magField - referenceMag);
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/your-repo/android_mag_plotter.git
+git clone https://github.com/kdragon1988/android_mag_plotter.git
 cd android_mag_plotter
 
 # Android Studio でプロジェクトを開く
@@ -211,25 +267,40 @@ cd android_mag_plotter
 
 ```
 app/src/main/
+├── assets/
+│   └── layers/                        # GeoJSONレイヤーデータ
+│       ├── did_japan.geojson          # DID（人口集中地区）
+│       ├── airport_restriction.geojson # 空港制限区域
+│       └── no_fly_zone.geojson        # 飛行禁止区域
 ├── java/com/visionoid/magplotter/
-│   ├── MagPlotterApplication.java      # Applicationクラス
+│   ├── MagPlotterApplication.java     # Applicationクラス
 │   ├── data/
-│   │   ├── dao/                        # Data Access Objects
-│   │   ├── db/                         # Database
-│   │   ├── model/                      # エンティティ
-│   │   └── repository/                 # リポジトリ
+│   │   ├── dao/                       # Data Access Objects
+│   │   ├── db/                        # Database
+│   │   ├── layer/                     # レイヤーデータ管理（v2.0.0〜）
+│   │   │   └── LayerDataRepository.java
+│   │   ├── model/                     # エンティティ
+│   │   └── repository/                # リポジトリ
 │   ├── ui/
-│   │   ├── splash/                     # スプラッシュ画面
-│   │   ├── mission/                    # ミッション管理
-│   │   ├── measurement/                # 計測画面
-│   │   ├── settings/                   # 設定画面
-│   │   └── offlinemap/                 # オフライン地図
-│   └── service/                        # バックグラウンドサービス
-└── res/
-    ├── layout/                         # レイアウトXML
-    ├── values/                         # リソース値
-    ├── drawable/                       # ドローアブル
-    └── menu/                           # メニュー
+│   │   ├── splash/                    # スプラッシュ画面
+│   │   ├── mission/                   # ミッション管理
+│   │   ├── measurement/               # 計測画面
+│   │   ├── settings/                  # 設定画面
+│   │   ├── offlinemap/                # オフライン地図
+│   │   └── map/                       # マップ関連（v2.0.0〜）
+│   │       └── layer/                 # レイヤー管理
+│   │           ├── GeoJsonParser.java
+│   │           ├── LayerDisplayStyle.java
+│   │           ├── LayerType.java
+│   │           └── MapLayerManager.java
+│   └── service/                       # バックグラウンドサービス
+├── res/
+│   ├── layout/                        # レイアウトXML
+│   ├── values/                        # リソース値
+│   ├── drawable/                      # ドローアブル
+│   └── menu/                          # メニュー
+└── tools/
+    └── download_did_data.py           # DIDデータダウンロードツール
 ```
 
 ## UI デザイン
@@ -243,6 +314,11 @@ app/src/main/
 - **警告**: #FF6B35（オレンジ）
 - **危険**: #FF0055（ネオンレッド）
 
+### レイヤーカラー（v2.0.0〜）
+- **DID**: #FF9800（オレンジ）透過度30%
+- **空港制限**: #F44336（赤）透過度30%
+- **飛行禁止**: #2196F3（青）透過度30%
+
 ### デザイン要素
 - HUD風データパネル
 - グリッド/スキャンライン背景
@@ -253,11 +329,30 @@ app/src/main/
 
 1. **ミッション作成**: 新規ミッションを作成し、場所名・担当者・閾値を設定
 2. **現場へ移動**: オフライン地図を事前にダウンロード（必要に応じて）
-3. **計測実施**: 
+3. **レイヤー表示**（v2.0.0〜）: メニュー → レイヤー選択でDID等を表示
+4. **計測実施**: 
    - 自動モード: 設定間隔で自動的に計測
    - 手動モード: ボタンタップで任意のポイントを計測
-4. **結果確認**: ヒートマップで危険エリアを視覚的に確認
-5. **エクスポート**: スクリーンショットを保存して共有
+5. **結果確認**: ヒートマップで危険エリアを視覚的に確認
+6. **エクスポート**: スクリーンショットを保存して共有
+
+## DIDデータの更新
+
+DID（人口集中地区）データは国勢調査に基づき5年ごとに更新されます。最新データは以下のツールで取得できます：
+
+```bash
+cd tools
+python download_did_data.py
+```
+
+詳細は `app/src/main/assets/layers/README.md` を参照してください。
+
+## バージョン履歴
+
+| バージョン | リリース日 | 主な変更点 |
+|-----------|-----------|-----------|
+| v2.0.0 | 2024-12-25 | GeoJSONマップレイヤー機能追加（DID/空港制限/飛行禁止） |
+| v1.0.0 | 2024-12-01 | 初回リリース |
 
 ## ライセンス
 
@@ -267,4 +362,4 @@ Proprietary - VISIONOID Inc.
 
 - [osmdroid](https://github.com/osmdroid/osmdroid) - OpenStreetMap for Android
 - [OpenStreetMap](https://www.openstreetmap.org/) - 地図データ
-
+- [国土地理院](https://www.gsi.go.jp/) - DID（人口集中地区）データ
