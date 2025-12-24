@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    dialog_layer_selection.xml
+    
+    VISIONOID MAG PLOTTER - レイヤー選択ダイアログレイアウト
+    飛行制限区域レイヤーの表示/非表示を切り替えるダイアログ
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/background_panel"
+    android:orientation="vertical"
+    android:padding="@dimen/spacing_md">
+
+    <!-- 人口密集区域（DID） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/spacing_sm"
+        android:paddingBottom="@dimen/spacing_sm">
+
+        <!-- カラーインジケータ -->
+        <View
+            android:id="@+id/indicator_did"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="@dimen/spacing_sm"
+            android:background="@drawable/bg_layer_indicator_did" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="monospace"
+            android:text="@string/layer_name_did"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_size_md" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switch_layer_did"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:thumbTint="@color/accent_cyan"
+            app:trackTint="@color/background_elevated" />
+
+    </LinearLayout>
+
+    <!-- 区切り線 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/border_primary" />
+
+    <!-- 空港制限区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/spacing_sm"
+        android:paddingBottom="@dimen/spacing_sm">
+
+        <View
+            android:id="@+id/indicator_airport"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="@dimen/spacing_sm"
+            android:background="@drawable/bg_layer_indicator_airport" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="monospace"
+            android:text="@string/layer_name_airport"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_size_md" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switch_layer_airport"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:thumbTint="@color/accent_cyan"
+            app:trackTint="@color/background_elevated" />
+
+    </LinearLayout>
+
+    <!-- 区切り線 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/border_primary" />
+
+    <!-- 飛行禁止区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/spacing_sm"
+        android:paddingBottom="@dimen/spacing_sm">
+
+        <View
+            android:id="@+id/indicator_no_fly"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="@dimen/spacing_sm"
+            android:background="@drawable/bg_layer_indicator_no_fly" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="monospace"
+            android:text="@string/layer_name_no_fly"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_size_md" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switch_layer_no_fly"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:thumbTint="@color/accent_cyan"
+            app:trackTint="@color/background_elevated" />
+
+    </LinearLayout>
+
+    <!-- 区切り線 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="@dimen/spacing_sm"
+        android:background="@color/border_primary" />
+
+    <!-- 表示スタイル選択 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/spacing_md"
+        android:paddingBottom="@dimen/spacing_sm">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="monospace"
+            android:text="@string/settings_layer_style"
+            android:textColor="@color/text_secondary"
+            android:textSize="@dimen/text_size_sm" />
+
+        <Spinner
+            android:id="@+id/spinner_layer_style"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_spinner"
+            android:dropDownWidth="160dp"
+            android:minWidth="120dp"
+            android:padding="@dimen/spacing_xs"
+            android:popupBackground="@color/background_elevated" />
+
+    </LinearLayout>
+
+</LinearLayout>
+

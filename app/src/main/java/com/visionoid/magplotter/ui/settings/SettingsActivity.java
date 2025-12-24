@@ -21,16 +21,24 @@ package com.visionoid.magplotter.ui.settings;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.Toast;
+import android.widget.AdapterView;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.preference.PreferenceManager;
 
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 import com.visionoid.magplotter.R;
+import com.visionoid.magplotter.ui.map.layer.LayerDisplayStyle;
+import com.visionoid.magplotter.ui.map.layer.LayerType;
+import com.visionoid.magplotter.ui.map.layer.MapLayerManager;
 
 /**
  * 設定画面アクティビティ
@@ -58,6 +66,12 @@ public class SettingsActivity extends AppCompatActivity {
     private TextInputEditText editInterval;
     private Button buttonSave;
     private Button buttonReset;
+    
+    // レイヤー設定UI要素
+    private Spinner spinnerLayerStyle;
+    private SwitchMaterial switchDefaultDid;
+    private SwitchMaterial switchDefaultAirport;
+    private SwitchMaterial switchDefaultNoFly;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +108,30 @@ public class SettingsActivity extends AppCompatActivity {
         editInterval = findViewById(R.id.edit_default_interval);
         buttonSave = findViewById(R.id.button_save);
         buttonReset = findViewById(R.id.button_reset);
+        
+        // レイヤー設定
+        spinnerLayerStyle = findViewById(R.id.spinner_layer_style);
+        switchDefaultDid = findViewById(R.id.switch_default_did);
+        switchDefaultAirport = findViewById(R.id.switch_default_airport);
+        switchDefaultNoFly = findViewById(R.id.switch_default_no_fly);
+        
+        // スタイル選択スピナーを設定
+        setupLayerStyleSpinner();
+    }
+    
+    /**
+     * レイヤースタイル選択スピナーを設定
+     */
+    private void setupLayerStyleSpinner() {
+        String[] styleNames = {
+                getString(R.string.layer_style_filled),
+                getString(R.string.layer_style_border),
+                getString(R.string.layer_style_hatched)
+        };
+        ArrayAdapter<String> styleAdapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, styleNames);
+        styleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerLayerStyle.setAdapter(styleAdapter);
     }
 
     /**
@@ -109,6 +147,28 @@ public class SettingsActivity extends AppCompatActivity {
         editSafeThreshold.setText(String.valueOf(safeThreshold));
         editDangerThreshold.setText(String.valueOf(dangerThreshold));
         editInterval.setText(String.valueOf(interval / 1000.0f));
+        
+        // レイヤー設定を読み込み
+        loadLayerSettings();
+    }
+    
+    /**
+     * レイヤー設定を読み込み
+     */
+    private void loadLayerSettings() {
+        // 表示スタイル
+        String styleId = preferences.getString(MapLayerManager.PREF_LAYER_STYLE, 
+                LayerDisplayStyle.FILLED.getId());
+        LayerDisplayStyle currentStyle = LayerDisplayStyle.fromId(styleId);
+        spinnerLayerStyle.setSelection(currentStyle.ordinal());
+        
+        // デフォルト表示状態
+        switchDefaultDid.setChecked(
+                preferences.getBoolean(LayerType.DID.getVisibilityPrefKey(), false));
+        switchDefaultAirport.setChecked(
+                preferences.getBoolean(LayerType.AIRPORT_RESTRICTION.getVisibilityPrefKey(), false));
+        switchDefaultNoFly.setChecked(
+                preferences.getBoolean(LayerType.NO_FLY_ZONE.getVisibilityPrefKey(), false));
     }
 
     /**
@@ -147,18 +207,39 @@ public class SettingsActivity extends AppCompatActivity {
             }
 
             // 保存
-            preferences.edit()
+            SharedPreferences.Editor editor = preferences.edit()
                     .putFloat(PREF_DEFAULT_REFERENCE_MAG, referenceMag)
                     .putFloat(PREF_DEFAULT_SAFE_THRESHOLD, safeThreshold)
                     .putFloat(PREF_DEFAULT_DANGER_THRESHOLD, dangerThreshold)
-                    .putInt(PREF_DEFAULT_INTERVAL, intervalMs)
-                    .apply();
+                    .putInt(PREF_DEFAULT_INTERVAL, intervalMs);
+            
+            // レイヤー設定を保存
+            saveLayerSettings(editor);
+            
+            editor.apply();
 
             Toast.makeText(this, "Settings saved", Toast.LENGTH_SHORT).show();
 
         } catch (NumberFormatException e) {
             Toast.makeText(this, R.string.error_invalid_value, Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /**
+     * レイヤー設定を保存
+     * 
+     * @param editor SharedPreferences.Editor
+     */
+    private void saveLayerSettings(SharedPreferences.Editor editor) {
+        // 表示スタイル
+        int stylePosition = spinnerLayerStyle.getSelectedItemPosition();
+        LayerDisplayStyle selectedStyle = LayerDisplayStyle.values()[stylePosition];
+        editor.putString(MapLayerManager.PREF_LAYER_STYLE, selectedStyle.getId());
+        
+        // デフォルト表示状態
+        editor.putBoolean(LayerType.DID.getVisibilityPrefKey(), switchDefaultDid.isChecked());
+        editor.putBoolean(LayerType.AIRPORT_RESTRICTION.getVisibilityPrefKey(), switchDefaultAirport.isChecked());
+        editor.putBoolean(LayerType.NO_FLY_ZONE.getVisibilityPrefKey(), switchDefaultNoFly.isChecked());
     }
 
     /**
@@ -169,6 +250,12 @@ public class SettingsActivity extends AppCompatActivity {
         editSafeThreshold.setText(String.valueOf(DEFAULT_SAFE_THRESHOLD));
         editDangerThreshold.setText(String.valueOf(DEFAULT_DANGER_THRESHOLD));
         editInterval.setText(String.valueOf(DEFAULT_INTERVAL / 1000.0f));
+        
+        // レイヤー設定もリセット
+        spinnerLayerStyle.setSelection(LayerDisplayStyle.FILLED.ordinal());
+        switchDefaultDid.setChecked(false);
+        switchDefaultAirport.setChecked(false);
+        switchDefaultNoFly.setChecked(false);
 
         Toast.makeText(this, "Reset to defaults", Toast.LENGTH_SHORT).show();
     }

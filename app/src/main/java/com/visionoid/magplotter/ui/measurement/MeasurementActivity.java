@@ -26,6 +26,7 @@ import android.content.ContentValues;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.util.Log;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -59,10 +60,15 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.visionoid.magplotter.R;
+import com.visionoid.magplotter.data.layer.LayerDataRepository;
 import com.visionoid.magplotter.data.model.MeasurementPoint;
 import com.visionoid.magplotter.data.model.Mission;
+import com.visionoid.magplotter.ui.map.layer.LayerDisplayStyle;
+import com.visionoid.magplotter.ui.map.layer.LayerType;
+import com.visionoid.magplotter.ui.map.layer.MapLayerManager;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase;
@@ -74,8 +80,6 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polygon;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
@@ -83,6 +87,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+import android.widget.AdapterView;
 
 /**
  * 計測画面アクティビティ
@@ -134,6 +142,10 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     
     /** 現在の地図タイプ（0: 標準, 1: 衛星, 2: 地形） */
     private int currentMapType = 0;
+    
+    // レイヤー関連
+    private MapLayerManager mapLayerManager;
+    private LayerDataRepository layerDataRepository;
     
     /** Esri World Imagery（衛星写真）タイルソース */
     private static final OnlineTileSourceBase ESRI_WORLD_IMAGERY = new XYTileSource(
@@ -202,6 +214,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         initializeSensors();
         initializeLocation();
         initializeMap();
+        initializeMapLayers();
         setupViewModel();
         setupListeners();
 
@@ -289,6 +302,97 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         currentLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
         currentLocationMarker.setTitle("Current Location");
         mapView.getOverlays().add(currentLocationMarker);
+    }
+
+    /**
+     * マップレイヤーを初期化
+     */
+    private void initializeMapLayers() {
+        mapLayerManager = new MapLayerManager(this, mapView);
+        layerDataRepository = new LayerDataRepository(this);
+
+        // 保存された表示状態に基づいてレイヤーを読み込み
+        for (LayerType layerType : LayerType.values()) {
+            if (mapLayerManager.isLayerVisible(layerType)) {
+                loadLayerData(layerType);
+            }
+        }
+    }
+
+    /**
+     * レイヤーデータを読み込み
+     * 
+     * @param layerType レイヤータイプ
+     */
+    private void loadLayerData(LayerType layerType) {
+        Log.d("MeasurementActivity", "loadLayerData開始: " + layerType.getId());
+        Toast.makeText(this, "レイヤー読み込み中: " + getString(layerType.getNameResId()), Toast.LENGTH_SHORT).show();
+        
+        layerDataRepository.getLayerData(layerType, false, new LayerDataRepository.DataCallback() {
+            @Override
+            public void onSuccess(String geoJson, boolean fromCache) {
+                final int geoJsonSize = geoJson != null ? geoJson.length() : 0;
+                Log.d("MeasurementActivity", "レイヤーデータ取得成功: " + layerType.getId() + 
+                        ", fromCache=" + fromCache + ", size=" + geoJsonSize);
+                
+                runOnUiThread(() -> {
+                    // デバッグ: データサイズを表示
+                    Toast.makeText(MeasurementActivity.this, 
+                            "GeoJSON取得: " + (geoJsonSize / 1024) + "KB", 
+                            Toast.LENGTH_SHORT).show();
+                    
+                    if (geoJson == null || geoJsonSize == 0) {
+                        Toast.makeText(MeasurementActivity.this, 
+                                "エラー: GeoJSONが空です", Toast.LENGTH_LONG).show();
+                        mapLayerManager.setLayerVisibility(layerType, false);
+                        return;
+                    }
+                    
+                    mapLayerManager.addLayer(layerType, geoJson);
+                    
+                    // デバッグ: パース結果を表示
+                    boolean isLoaded = mapLayerManager.isLayerLoaded(layerType);
+                    Object center = mapLayerManager.getLayerCenter(layerType);
+                    int polygonCount = mapLayerManager.getLayerPolygonCount(layerType);
+                    
+                    Toast.makeText(MeasurementActivity.this, 
+                            "パース結果: loaded=" + isLoaded + ", center=" + (center != null) + ", polygons=" + polygonCount, 
+                            Toast.LENGTH_LONG).show();
+                    
+                    // レイヤーにデータがあるか確認
+                    if (isLoaded && center != null && polygonCount > 0) {
+                        String source = fromCache ? "キャッシュ" : "アセット";
+                        Toast.makeText(MeasurementActivity.this, 
+                                getString(layerType.getNameResId()) + " 読み込み完了 (" + polygonCount + "件)", 
+                                Toast.LENGTH_SHORT).show();
+                        
+                        // レイヤーの範囲にズームするか確認
+                        showZoomToLayerDialog(layerType);
+                    } else {
+                        // データが空の場合
+                        showNoLayerDataDialog(layerType);
+                        mapLayerManager.setLayerVisibility(layerType, false);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e("MeasurementActivity", "レイヤーデータ取得失敗: " + layerType.getId() + ", error=" + error);
+                runOnUiThread(() -> {
+                    Toast.makeText(MeasurementActivity.this, 
+                            "読み込みエラー: " + error, 
+                            Toast.LENGTH_LONG).show();
+                    // 読み込み失敗時は表示状態をOFFに戻す
+                    mapLayerManager.setLayerVisibility(layerType, false);
+                });
+            }
+
+            @Override
+            public void onProgress(int progress) {
+                // 進捗表示（必要に応じて実装）
+            }
+        });
     }
 
     /**
@@ -790,6 +894,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         } else if (id == R.id.action_map_type) {
             showMapTypeDialog();
             return true;
+        } else if (id == R.id.action_layers) {
+            showLayerSelectionDialog();
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -834,6 +941,128 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                 break;
         }
         mapView.invalidate();
+    }
+
+    /**
+     * レイヤー選択ダイアログを表示
+     */
+    private void showLayerSelectionDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_layer_selection, null);
+
+        // スイッチを取得
+        SwitchMaterial switchDid = dialogView.findViewById(R.id.switch_layer_did);
+        SwitchMaterial switchAirport = dialogView.findViewById(R.id.switch_layer_airport);
+        SwitchMaterial switchNoFly = dialogView.findViewById(R.id.switch_layer_no_fly);
+        Spinner spinnerStyle = dialogView.findViewById(R.id.spinner_layer_style);
+
+        // 現在の状態を設定
+        switchDid.setChecked(mapLayerManager.isLayerVisible(LayerType.DID));
+        switchAirport.setChecked(mapLayerManager.isLayerVisible(LayerType.AIRPORT_RESTRICTION));
+        switchNoFly.setChecked(mapLayerManager.isLayerVisible(LayerType.NO_FLY_ZONE));
+
+        // スタイル選択スピナーを設定
+        String[] styleNames = {
+                getString(R.string.layer_style_filled),
+                getString(R.string.layer_style_border),
+                getString(R.string.layer_style_hatched)
+        };
+        ArrayAdapter<String> styleAdapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, styleNames);
+        styleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerStyle.setAdapter(styleAdapter);
+
+        // 現在のスタイルを選択
+        LayerDisplayStyle currentStyle = mapLayerManager.getDisplayStyle();
+        spinnerStyle.setSelection(currentStyle.ordinal());
+
+        // スタイル変更リスナー
+        spinnerStyle.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                LayerDisplayStyle newStyle = LayerDisplayStyle.values()[position];
+                if (newStyle != mapLayerManager.getDisplayStyle()) {
+                    mapLayerManager.setDisplayStyle(newStyle);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        // ダイアログを表示
+        new MaterialAlertDialogBuilder(this, R.style.SpyTech_Dialog)
+                .setTitle(R.string.layer_title)
+                .setView(dialogView)
+                .setPositiveButton(R.string.action_confirm, (dialog, which) -> {
+                    // レイヤー表示状態を更新
+                    updateLayerVisibility(LayerType.DID, switchDid.isChecked());
+                    updateLayerVisibility(LayerType.AIRPORT_RESTRICTION, switchAirport.isChecked());
+                    updateLayerVisibility(LayerType.NO_FLY_ZONE, switchNoFly.isChecked());
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
+    }
+
+    /**
+     * レイヤーの表示状態を更新
+     * 
+     * @param layerType レイヤータイプ
+     * @param visible 表示するかどうか
+     */
+    private void updateLayerVisibility(LayerType layerType, boolean visible) {
+        boolean currentlyVisible = mapLayerManager.isLayerVisible(layerType);
+        
+        if (visible && !currentlyVisible) {
+            // 表示ONにする場合、データがなければ読み込む
+            mapLayerManager.setLayerVisibility(layerType, true);
+            if (!mapLayerManager.isLayerLoaded(layerType)) {
+                loadLayerData(layerType);
+            }
+        } else if (!visible && currentlyVisible) {
+            // 表示OFFにする
+            mapLayerManager.setLayerVisibility(layerType, false);
+        }
+    }
+
+    /**
+     * レイヤーの範囲にズームするか確認するダイアログを表示
+     * 
+     * @param layerType レイヤータイプ
+     */
+    private void showZoomToLayerDialog(LayerType layerType) {
+        new MaterialAlertDialogBuilder(this, R.style.SpyTech_Dialog)
+                .setTitle(getString(layerType.getNameResId()))
+                .setMessage("レイヤーの表示位置に移動しますか？")
+                .setPositiveButton("移動", (dialog, which) -> {
+                    mapLayerManager.zoomToLayer(layerType);
+                })
+                .setNegativeButton("現在位置のまま", null)
+                .show();
+    }
+
+    /**
+     * レイヤーデータがない場合のダイアログを表示
+     * 
+     * @param layerType レイヤータイプ
+     */
+    private void showNoLayerDataDialog(LayerType layerType) {
+        String message = getString(layerType.getNameResId()) + "のデータがありません。\n\n" +
+                "正確なデータを表示するには、公式データをダウンロードしてアプリに組み込む必要があります。\n\n" +
+                "詳細は assets/layers/README.md を参照してください。";
+        
+        new MaterialAlertDialogBuilder(this, R.style.SpyTech_Dialog)
+                .setTitle(R.string.layer_no_data)
+                .setMessage(message)
+                .setPositiveButton(R.string.action_confirm, null)
+                .show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (layerDataRepository != null) {
+            layerDataRepository.shutdown();
+        }
     }
 }
 

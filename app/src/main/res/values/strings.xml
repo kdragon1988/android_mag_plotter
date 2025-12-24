@@ -129,5 +129,27 @@
     <!-- 確認ダイアログ -->
     <string name="dialog_exit_confirm">Exit without saving?</string>
     <string name="dialog_exit_message">Unsaved changes will be lost.</string>
+    
+    <!-- マップレイヤー関連 -->
+    <string name="action_layers">LAYERS</string>
+    <string name="layer_title">MAP LAYERS</string>
+    <string name="layer_name_did">人口密集区域（DID）</string>
+    <string name="layer_name_airport">空港制限区域</string>
+    <string name="layer_name_no_fly">飛行禁止区域</string>
+    <string name="layer_style_filled">塗りつぶし</string>
+    <string name="layer_style_border">境界線のみ</string>
+    <string name="layer_style_hatched">ハッチング</string>
+    <string name="layer_loading">読み込み中...</string>
+    <string name="layer_load_error">レイヤーデータの読み込みに失敗しました</string>
+    <string name="layer_no_data">データがありません</string>
+    <string name="layer_downloading">ダウンロード中...</string>
+    <string name="layer_download_complete">ダウンロード完了</string>
+    <string name="layer_download_error">ダウンロードに失敗しました</string>
+    <string name="layer_cache_expired">キャッシュの有効期限が切れています</string>
+    
+    <!-- レイヤー設定 -->
+    <string name="settings_category_layer">LAYER SETTINGS</string>
+    <string name="settings_layer_style">表示スタイル</string>
+    <string name="settings_layer_default_visibility">デフォルト表示</string>
 </resources>
 

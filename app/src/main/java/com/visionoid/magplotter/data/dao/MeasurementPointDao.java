@@ -183,3 +183,4 @@ public interface MeasurementPointDao {
                                              double minLng, double maxLng);
 }
 
+

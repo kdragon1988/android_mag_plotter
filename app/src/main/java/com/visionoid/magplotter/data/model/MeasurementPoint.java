@@ -347,3 +347,4 @@ public class MeasurementPoint {
     public static final String MODE_MANUAL = "MANUAL";
 }
 
+
