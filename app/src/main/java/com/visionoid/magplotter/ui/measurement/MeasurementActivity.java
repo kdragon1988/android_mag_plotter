@@ -23,6 +23,7 @@ package com.visionoid.magplotter.ui.measurement;
 
 import android.Manifest;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -31,7 +32,9 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.GnssStatus;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -127,6 +130,12 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private LocationCallback locationCallback;
     private Location currentLocation;
     private float currentAccuracy = 0;
+    
+    // GNSS（サテライト）関連
+    private LocationManager locationManager;
+    private GnssStatus.Callback gnssStatusCallback;
+    private int satelliteCount = 0;        // 捕捉中のサテライト数
+    private int usedSatelliteCount = 0;    // 測位に使用中のサテライト数
 
     // 計測制御
     private Handler measurementHandler;
@@ -186,6 +195,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private TextView textAccuracy;
     private TextView textPointCount;
     private TextView textIntervalValue;
+    private TextView textSatelliteCount;
     private SwitchMaterial switchAutoMode;
     private SeekBar seekBarInterval;
     private Button buttonMeasure;
@@ -244,6 +254,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         textAccuracy = findViewById(R.id.text_accuracy);
         textPointCount = findViewById(R.id.text_point_count);
         textIntervalValue = findViewById(R.id.text_interval_value);
+        textSatelliteCount = findViewById(R.id.text_satellite_count);
         switchAutoMode = findViewById(R.id.switch_auto_mode);
         seekBarInterval = findViewById(R.id.seekbar_interval);
         buttonMeasure = findViewById(R.id.button_measure);
@@ -252,6 +263,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
 
         // 初期値設定
         updateIntervalDisplay(measurementIntervalMs);
+        updateSatelliteDisplay();
     }
 
     /**
@@ -273,6 +285,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
      */
     private void initializeLocation() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         locationCallback = new LocationCallback() {
             @Override
@@ -284,6 +297,37 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                     updateLocationUI();
                     updateMapLocation();
                 }
+            }
+        };
+        
+        // GNSS（サテライト）ステータスコールバック
+        gnssStatusCallback = new GnssStatus.Callback() {
+            @Override
+            public void onSatelliteStatusChanged(@NonNull GnssStatus status) {
+                int total = status.getSatelliteCount();
+                int used = 0;
+                
+                // 測位に使用されているサテライトをカウント
+                for (int i = 0; i < total; i++) {
+                    if (status.usedInFix(i)) {
+                        used++;
+                    }
+                }
+                
+                satelliteCount = total;
+                usedSatelliteCount = used;
+                
+                runOnUiThread(() -> updateSatelliteDisplay());
+            }
+            
+            @Override
+            public void onStarted() {
+                Log.d("MeasurementActivity", "GNSS started");
+            }
+            
+            @Override
+            public void onStopped() {
+                Log.d("MeasurementActivity", "GNSS stopped");
             }
         };
     }
@@ -661,6 +705,36 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
             textGpsStatus.setTextColor(getColor(R.color.status_warning));
         }
     }
+    
+    /**
+     * サテライト数表示を更新
+     * 
+     * 形式: "使用中/捕捉中" (例: "8/12")
+     */
+    private void updateSatelliteDisplay() {
+        if (textSatelliteCount == null) return;
+        
+        if (satelliteCount > 0) {
+            // 使用中/捕捉中 の形式で表示
+            textSatelliteCount.setText(String.format(Locale.US, "%d/%d", 
+                    usedSatelliteCount, satelliteCount));
+            
+            // サテライト数に応じて色を変更
+            if (usedSatelliteCount >= 6) {
+                // 良好（6衛星以上で精度良好）
+                textSatelliteCount.setTextColor(getColor(R.color.status_safe));
+            } else if (usedSatelliteCount >= 4) {
+                // 測位可能（4衛星以上で3D測位）
+                textSatelliteCount.setTextColor(getColor(R.color.status_warning));
+            } else {
+                // 測位困難
+                textSatelliteCount.setTextColor(getColor(R.color.status_danger));
+            }
+        } else {
+            textSatelliteCount.setText("--");
+            textSatelliteCount.setTextColor(getColor(R.color.text_secondary));
+        }
+    }
 
     /**
      * 地図上の現在位置を更新
@@ -840,6 +914,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                 .build();
 
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+        
+        // GNSSステータス監視を開始
+        startGnssStatusUpdates();
     }
 
     /**
@@ -847,6 +924,46 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
      */
     private void stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback);
+        
+        // GNSSステータス監視を停止
+        stopGnssStatusUpdates();
+    }
+    
+    /**
+     * GNSSステータス監視を開始
+     */
+    private void startGnssStatusUpdates() {
+        if (locationManager == null || gnssStatusCallback == null) {
+            return;
+        }
+        
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        
+        try {
+            locationManager.registerGnssStatusCallback(gnssStatusCallback, new Handler(Looper.getMainLooper()));
+            Log.d("MeasurementActivity", "GNSSステータス監視開始");
+        } catch (Exception e) {
+            Log.e("MeasurementActivity", "GNSSステータス監視開始に失敗: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * GNSSステータス監視を停止
+     */
+    private void stopGnssStatusUpdates() {
+        if (locationManager == null || gnssStatusCallback == null) {
+            return;
+        }
+        
+        try {
+            locationManager.unregisterGnssStatusCallback(gnssStatusCallback);
+            Log.d("MeasurementActivity", "GNSSステータス監視停止");
+        } catch (Exception e) {
+            Log.e("MeasurementActivity", "GNSSステータス監視停止に失敗: " + e.getMessage());
+        }
     }
 
     @Override
