@@ -10,13 +10,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_primary"
+    android:fitsSystemWindows="true"
     tools:context=".ui.offlinemap.OfflineMapActivity">
 
     <!-- ツールバー -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/background_panel">
+        android:background="@color/background_panel"
+        android:fitsSystemWindows="true">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
@@ -97,7 +99,10 @@
             android:layout_height="wrap_content"
             android:background="@drawable/bg_panel"
             android:orientation="vertical"
-            android:padding="@dimen/spacing_md">
+            android:paddingStart="@dimen/spacing_md"
+            android:paddingTop="@dimen/spacing_md"
+            android:paddingEnd="@dimen/spacing_md"
+            android:paddingBottom="48dp">
 
             <!-- プログレスバー -->
             <ProgressBar

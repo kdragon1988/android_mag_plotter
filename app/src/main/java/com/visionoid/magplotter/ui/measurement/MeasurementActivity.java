@@ -65,11 +65,16 @@ import com.visionoid.magplotter.data.model.MeasurementPoint;
 import com.visionoid.magplotter.data.model.Mission;
 
 import org.osmdroid.api.IMapController;
+import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.tileprovider.tilesource.XYTileSource;
 import org.osmdroid.util.GeoPoint;
+import org.osmdroid.util.MapTileIndex;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polygon;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -126,6 +131,41 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private IMapController mapController;
     private Marker currentLocationMarker;
     private List<Polygon> heatmapPolygons = new ArrayList<>();
+    
+    /** 現在の地図タイプ（0: 標準, 1: 衛星, 2: 地形） */
+    private int currentMapType = 0;
+    
+    /** Esri World Imagery（衛星写真）タイルソース */
+    private static final OnlineTileSourceBase ESRI_WORLD_IMAGERY = new XYTileSource(
+            "EsriWorldImagery",
+            0, 19, 256, ".jpg",
+            new String[]{"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"}
+    ) {
+        @Override
+        public String getTileURLString(long pMapTileIndex) {
+            return getBaseUrl()
+                    + MapTileIndex.getZoom(pMapTileIndex)
+                    + "/" + MapTileIndex.getY(pMapTileIndex)
+                    + "/" + MapTileIndex.getX(pMapTileIndex)
+                    + mImageFilenameEnding;
+        }
+    };
+    
+    /** OpenTopoMap（地形図）タイルソース */
+    private static final OnlineTileSourceBase OPEN_TOPO_MAP = new XYTileSource(
+            "OpenTopoMap",
+            0, 17, 256, ".png",
+            new String[]{"https://a.tile.opentopomap.org/", "https://b.tile.opentopomap.org/", "https://c.tile.opentopomap.org/"}
+    ) {
+        @Override
+        public String getTileURLString(long pMapTileIndex) {
+            return getBaseUrl()
+                    + MapTileIndex.getZoom(pMapTileIndex)
+                    + "/" + MapTileIndex.getX(pMapTileIndex)
+                    + "/" + MapTileIndex.getY(pMapTileIndex)
+                    + mImageFilenameEnding;
+        }
+    };
 
     // UI要素
     private TextView textMagValue;
@@ -747,8 +787,53 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                 mapController.animateTo(geoPoint);
             }
             return true;
+        } else if (id == R.id.action_map_type) {
+            showMapTypeDialog();
+            return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+    
+    /**
+     * 地図タイプ選択ダイアログを表示
+     */
+    private void showMapTypeDialog() {
+        String[] mapTypes = {
+                getString(R.string.map_type_standard),
+                getString(R.string.map_type_satellite),
+                getString(R.string.map_type_terrain)
+        };
+        
+        new MaterialAlertDialogBuilder(this, R.style.SpyTech_Dialog)
+                .setTitle(R.string.action_map_type)
+                .setSingleChoiceItems(mapTypes, currentMapType, (dialog, which) -> {
+                    currentMapType = which;
+                    updateMapTileSource();
+                    dialog.dismiss();
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
+    }
+    
+    /**
+     * 地図タイルソースを更新
+     */
+    private void updateMapTileSource() {
+        switch (currentMapType) {
+            case 0: // 標準地図
+                mapView.setTileSource(TileSourceFactory.MAPNIK);
+                Toast.makeText(this, R.string.map_type_standard, Toast.LENGTH_SHORT).show();
+                break;
+            case 1: // 衛星写真
+                mapView.setTileSource(ESRI_WORLD_IMAGERY);
+                Toast.makeText(this, R.string.map_type_satellite, Toast.LENGTH_SHORT).show();
+                break;
+            case 2: // 地形図
+                mapView.setTileSource(OPEN_TOPO_MAP);
+                Toast.makeText(this, R.string.map_type_terrain, Toast.LENGTH_SHORT).show();
+                break;
+        }
+        mapView.invalidate();
     }
 }
 

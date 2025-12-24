@@ -98,6 +98,12 @@
     <string name="action_settings">SETTINGS</string>
     <string name="action_offline_maps">OFFLINE MAPS</string>
     <string name="action_back">BACK</string>
+    <string name="action_map_type">MAP TYPE</string>
+    
+    <!-- 地図タイプ -->
+    <string name="map_type_standard">STANDARD MAP</string>
+    <string name="map_type_satellite">SATELLITE</string>
+    <string name="map_type_terrain">TERRAIN</string>
     
     <!-- ステータス -->
     <string name="status_safe">SAFE</string>

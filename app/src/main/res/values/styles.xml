@@ -5,6 +5,18 @@
     VISIONOID MAG PLOTTER - 追加スタイル定義
 -->
 <resources>
+    <!-- ダイアログスタイル（エイリアス） -->
+    <style name="SpyTech_Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:background">@color/background_panel</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="colorPrimary">@color/accent_cyan</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/SpyTech.AlertDialog.Title</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/SpyTech.AlertDialog.Body</item>
+        <item name="buttonBarPositiveButtonStyle">@style/SpyTech.AlertDialog.Button.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/SpyTech.AlertDialog.Button.Negative</item>
+    </style>
+    
     <!-- アラートダイアログスタイル -->
     <style name="SpyTech_AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
         <item name="android:background">@color/background_panel</item>

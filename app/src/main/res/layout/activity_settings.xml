@@ -10,13 +10,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_primary"
+    android:fitsSystemWindows="true"
     tools:context=".ui.settings.SettingsActivity">
 
     <!-- ツールバー -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/background_panel">
+        android:background="@color/background_panel"
+        android:fitsSystemWindows="true">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
@@ -219,7 +221,7 @@
 
             <View
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/spacing_xl" />
+                android:layout_height="64dp" />
 
         </LinearLayout>
 
