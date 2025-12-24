@@ -407,16 +407,34 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         }
         heatmapPolygons.clear();
 
-        // 各ポイントに円を描画
-        for (MeasurementPoint point : points) {
-            int color = getHeatmapColor(point.getNoiseValue());
-            Polygon circle = createCircle(
-                    new GeoPoint(point.getLatitude(), point.getLongitude()),
-                    5.0, // 半径5メートル
-                    color
-            );
-            heatmapPolygons.add(circle);
-            mapView.getOverlays().add(circle);
+        // ノイズ値でソート（低い順 → 高いノイズ値が上のレイヤーになる）
+        List<MeasurementPoint> sortedPoints = new ArrayList<>(points);
+        sortedPoints.sort((p1, p2) -> Double.compare(p1.getNoiseValue(), p2.getNoiseValue()));
+
+        // 各ポイントに円を描画（直径1m = 半径0.5m、縁をぼかすグラデーション効果）
+        for (MeasurementPoint point : sortedPoints) {
+            int baseColor = getHeatmapColor(point.getNoiseValue());
+            GeoPoint center = new GeoPoint(point.getLatitude(), point.getLongitude());
+            
+            // グラデーション効果：外側から内側へ複数の円を重ねる
+            double baseRadius = 0.5; // 半径0.5メートル（直径1m）
+            int layers = 5; // レイヤー数
+            
+            for (int layer = layers - 1; layer >= 0; layer--) {
+                // 外側ほど大きく、透明度が高い
+                double layerRadius = baseRadius * (1.0 + layer * 0.3);
+                int alpha = (int) (Color.alpha(baseColor) * (1.0 - layer * 0.2));
+                int layerColor = Color.argb(
+                        Math.max(alpha, 20),
+                        Color.red(baseColor),
+                        Color.green(baseColor),
+                        Color.blue(baseColor)
+                );
+                
+                Polygon circle = createCircle(center, layerRadius, layerColor);
+                heatmapPolygons.add(circle);
+                mapView.getOverlays().add(circle);
+            }
         }
 
         // 現在位置マーカーを最前面に
