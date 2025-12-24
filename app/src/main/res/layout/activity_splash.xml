@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_splash.xml
+    
+    VISIONOID MAG PLOTTER - スプラッシュ画面レイアウト
+    スパイテック風のスキャンアニメーション付き起動画面
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_primary"
+    tools:context=".ui.splash.SplashActivity">
+
+    <!-- グリッド背景 -->
+    <View
+        android:id="@+id/grid_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_grid" />
+
+    <!-- スキャンライン -->
+    <View
+        android:id="@+id/scan_line"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@color/accent_cyan"
+        android:alpha="0.7" />
+
+    <!-- メインコンテンツ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_xl">
+
+        <!-- ロゴコンテナ -->
+        <LinearLayout
+            android:id="@+id/container_logo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <!-- アプリアイコン -->
+            <View
+                android:id="@+id/icon_container"
+                android:layout_width="@dimen/splash_logo_size"
+                android:layout_height="@dimen/splash_logo_size"
+                android:background="@drawable/ic_logo_splash" />
+
+            <!-- アプリ名 -->
+            <TextView
+                android:id="@+id/text_app_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.2"
+                android:text="@string/app_name"
+                android:textColor="@color/accent_cyan"
+                android:textSize="@dimen/text_size_title"
+                android:textStyle="bold" />
+
+            <!-- タグライン -->
+            <TextView
+                android:id="@+id/text_tagline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.15"
+                android:text="@string/app_tagline"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_sm" />
+
+        </LinearLayout>
+
+        <!-- ステータス表示エリア -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_xxl"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <!-- プログレスバー -->
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="200dp"
+                android:layout_height="4dp"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/progress_splash"
+                android:progressTint="@color/accent_cyan" />
+
+            <!-- ステータステキスト -->
+            <TextView
+                android:id="@+id/text_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.1"
+                android:text="@string/splash_initializing"
+                android:textColor="@color/accent_cyan"
+                android:textSize="@dimen/text_size_xs" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- 下部のバージョン情報 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="@dimen/spacing_xl"
+        android:fontFamily="monospace"
+        android:text="v1.0.0"
+        android:textColor="@color/text_hint"
+        android:textSize="@dimen/text_size_xs" />
+
+    <!-- コーナー装飾（左上） -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="start|top"
+        android:layout_margin="@dimen/spacing_md"
+        android:background="@drawable/corner_decoration_top_left" />
+
+    <!-- コーナー装飾（右上） -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="end|top"
+        android:layout_margin="@dimen/spacing_md"
+        android:background="@drawable/corner_decoration_top_right" />
+
+    <!-- コーナー装飾（左下） -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="start|bottom"
+        android:layout_margin="@dimen/spacing_md"
+        android:background="@drawable/corner_decoration_bottom_left" />
+
+    <!-- コーナー装飾（右下） -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="end|bottom"
+        android:layout_margin="@dimen/spacing_md"
+        android:background="@drawable/corner_decoration_bottom_right" />
+
+</FrameLayout>
+

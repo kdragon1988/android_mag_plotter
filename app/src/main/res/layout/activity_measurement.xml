@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_measurement.xml
+    
+    VISIONOID MAG PLOTTER - 計測画面レイアウト
+    HUD風のデータパネルとヒートマップ付き地図
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_primary"
+    tools:context=".ui.measurement.MeasurementActivity">
+
+    <!-- ツールバー -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background_panel">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/background_panel"
+            app:navigationIcon="@drawable/ic_back"
+            app:subtitleTextColor="@color/text_secondary"
+            app:titleTextColor="@color/accent_cyan"
+            app:titleTextAppearance="@style/SpyTech.Text.Title" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- メインコンテンツ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- 上部: ステータスパネル -->
+        <LinearLayout
+            android:id="@+id/panel_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_hud_panel"
+            android:orientation="horizontal"
+            android:padding="@dimen/spacing_md">
+
+            <!-- 磁場値表示 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SpyTech.Text.HUD.Label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/measurement_label_mag" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="bottom"
+                    android:baselineAligned="true"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/text_mag_value"
+                        style="@style/SpyTech.Text.HUD.Value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="46.5" />
+
+                    <TextView
+                        style="@style/SpyTech.Text.HUD"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="@string/measurement_unit_ut"
+                        android:textSize="@dimen/text_size_sm" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 区切り線 -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/spacing_sm"
+                android:layout_marginEnd="@dimen/spacing_sm"
+                android:background="@color/border_primary" />
+
+            <!-- ノイズ値表示 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SpyTech.Text.HUD.Label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/measurement_label_noise" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="bottom"
+                    android:baselineAligned="true"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/text_noise_value"
+                        style="@style/SpyTech.Text.HUD.Value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/status_safe"
+                        tools:text="2.3" />
+
+                    <TextView
+                        style="@style/SpyTech.Text.HUD"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="@string/measurement_unit_ut"
+                        android:textSize="@dimen/text_size_sm" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 区切り線 -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/spacing_sm"
+                android:layout_marginEnd="@dimen/spacing_sm"
+                android:background="@color/border_primary" />
+
+            <!-- GPS精度表示 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SpyTech.Text.HUD.Label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/measurement_label_accuracy" />
+
+                <TextView
+                    android:id="@+id/text_accuracy"
+                    style="@style/SpyTech.Text.HUD"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="@dimen/text_size_lg"
+                    tools:text="3.2m" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- 中央: 地図 -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <org.osmdroid.views.MapView
+                android:id="@+id/map_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- GPS座標オーバーレイ -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_margin="@dimen/spacing_sm"
+                android:background="@drawable/bg_overlay_panel"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_sm">
+
+                <TextView
+                    style="@style/SpyTech.Text.HUD.Label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/measurement_label_gps" />
+
+                <TextView
+                    android:id="@+id/text_gps_status"
+                    style="@style/SpyTech.Text.HUD"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/status_warning"
+                    tools:text="35.6812, 139.7671" />
+
+            </LinearLayout>
+
+            <!-- ポイント数オーバーレイ -->
+            <TextView
+                android:id="@+id/text_point_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="@dimen/spacing_sm"
+                android:background="@drawable/bg_overlay_panel"
+                android:fontFamily="monospace"
+                android:padding="@dimen/spacing_sm"
+                android:text="@string/mission_points_count"
+                android:textColor="@color/accent_cyan"
+                android:textSize="@dimen/text_size_sm" />
+
+        </FrameLayout>
+
+        <!-- 下部: コントロールパネル -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_panel"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_md">
+
+            <!-- モード切り替え行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="monospace"
+                    android:text="@string/measurement_mode_auto"
+                    android:textColor="@color/text_primary"
+                    android:textSize="@dimen/text_size_md" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switch_auto_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/accent_cyan"
+                    app:trackTint="@color/background_elevated" />
+
+            </LinearLayout>
+
+            <!-- インターバル設定行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="@string/measurement_label_interval"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_size_sm" />
+
+                <SeekBar
+                    android:id="@+id/seekbar_interval"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_sm"
+                    android:layout_marginEnd="@dimen/spacing_sm"
+                    android:layout_weight="1"
+                    android:enabled="false"
+                    android:max="19"
+                    android:progress="9"
+                    android:progressTint="@color/accent_cyan"
+                    android:thumbTint="@color/accent_cyan" />
+
+                <TextView
+                    android:id="@+id/text_interval_value"
+                    android:layout_width="48dp"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:gravity="end"
+                    android:textColor="@color/accent_cyan"
+                    android:textSize="@dimen/text_size_sm"
+                    tools:text="1.0s" />
+
+            </LinearLayout>
+
+            <!-- ボタン行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <!-- 手動計測ボタン -->
+                <Button
+                    android:id="@+id/button_measure"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/button_height_large"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_button_primary"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.1"
+                    android:text="@string/measurement_record"
+                    android:textColor="@color/background_primary"
+                    android:textSize="@dimen/text_size_lg"
+                    android:textStyle="bold" />
+
+                <!-- 自動計測開始/停止ボタン -->
+                <Button
+                    android:id="@+id/button_start_stop"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/button_height_large"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_button_primary"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.1"
+                    android:text="@string/measurement_start"
+                    android:textColor="@color/background_primary"
+                    android:textSize="@dimen/text_size_lg"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+

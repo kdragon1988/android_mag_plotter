@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    styles.xml
+    
+    VISIONOID MAG PLOTTER - 追加スタイル定義
+-->
+<resources>
+    <!-- アラートダイアログスタイル -->
+    <style name="SpyTech_AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:background">@color/background_panel</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="colorPrimary">@color/accent_cyan</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/SpyTech.AlertDialog.Title</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/SpyTech.AlertDialog.Body</item>
+        <item name="buttonBarPositiveButtonStyle">@style/SpyTech.AlertDialog.Button.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/SpyTech.AlertDialog.Button.Negative</item>
+    </style>
+
+    <style name="SpyTech.AlertDialog.Title" parent="MaterialAlertDialog.Material3.Title.Text">
+        <item name="android:textColor">@color/accent_cyan</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:letterSpacing">0.1</item>
+    </style>
+
+    <style name="SpyTech.AlertDialog.Body" parent="MaterialAlertDialog.Material3.Body.Text">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <style name="SpyTech.AlertDialog.Button.Positive" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/accent_cyan</item>
+        <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <style name="SpyTech.AlertDialog.Button.Negative" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">monospace</item>
+    </style>
+</resources>
+

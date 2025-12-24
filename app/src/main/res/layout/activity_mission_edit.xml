@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_mission_edit.xml
+    
+    VISIONOID MAG PLOTTER - ミッション作成/編集画面レイアウト
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_primary"
+    tools:context=".ui.mission.MissionEditActivity">
+
+    <!-- ツールバー -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background_panel">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/background_panel"
+            app:navigationIcon="@drawable/ic_back"
+            app:titleTextColor="@color/accent_cyan"
+            app:titleTextAppearance="@style/SpyTech.Text.Title" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- スクロールコンテンツ -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_md">
+
+            <!-- 基本情報セクション -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.1"
+                android:text="// MISSION INFO"
+                android:textColor="@color/accent_cyan"
+                android:textSize="@dimen/text_size_sm" />
+
+            <!-- 場所名 -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layout_location_name"
+                style="@style/SpyTech.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:hint="@string/mission_label_name">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_location_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:textColor="@color/text_primary" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- 担当者 -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layout_operator"
+                style="@style/SpyTech.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:hint="@string/mission_label_operator">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_operator"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:inputType="textPersonName"
+                    android:maxLines="1"
+                    android:textColor="@color/text_primary" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- メモ -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layout_memo"
+                style="@style/SpyTech.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:hint="@string/mission_label_memo">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_memo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:gravity="top"
+                    android:inputType="textMultiLine"
+                    android:minLines="3"
+                    android:textColor="@color/text_primary" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- 磁場設定セクション -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xl"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.1"
+                android:text="// MAGNETIC SETTINGS"
+                android:textColor="@color/accent_cyan"
+                android:textSize="@dimen/text_size_sm" />
+
+            <!-- 基準磁場値 -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layout_reference_mag"
+                style="@style/SpyTech.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:hint="@string/mission_label_reference"
+                app:suffixText="μT">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_reference_mag"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1"
+                    android:textColor="@color/text_primary" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- 閾値設定 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:orientation="horizontal">
+
+                <!-- 安全閾値 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layout_safe_threshold"
+                    style="@style/SpyTech.TextInputLayout"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/spacing_sm"
+                    android:layout_weight="1"
+                    android:hint="@string/settings_threshold_safe"
+                    app:suffixText="μT">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edit_safe_threshold"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:inputType="numberDecimal"
+                        android:maxLines="1"
+                        android:textColor="@color/status_safe" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- 危険閾値 -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layout_danger_threshold"
+                    style="@style/SpyTech.TextInputLayout"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_sm"
+                    android:layout_weight="1"
+                    android:hint="@string/settings_threshold_danger"
+                    app:suffixText="μT">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edit_danger_threshold"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:inputType="numberDecimal"
+                        android:maxLines="1"
+                        android:textColor="@color/status_danger" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+            <!-- 保存ボタン -->
+            <Button
+                android:id="@+id/button_save"
+                style="@style/SpyTech.Button"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_height_large"
+                android:layout_marginTop="@dimen/spacing_xl"
+                android:text="@string/action_save" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/spacing_xl" />
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+

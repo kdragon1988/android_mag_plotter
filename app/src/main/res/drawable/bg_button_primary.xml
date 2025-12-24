@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    bg_button_primary.xml
+    
+    プライマリボタン背景（グロー効果付き）
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 押下時 -->
+    <item android:state_pressed="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/accent_cyan_dark" />
+                    <corners android:radius="@dimen/button_corner_radius" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    
+    <!-- 無効時 -->
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/background_elevated" />
+            <corners android:radius="@dimen/button_corner_radius" />
+        </shape>
+    </item>
+    
+    <!-- 通常時 -->
+    <item>
+        <layer-list>
+            <!-- グロー効果 -->
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/glow_cyan" />
+                    <corners android:radius="@dimen/button_corner_radius" />
+                </shape>
+            </item>
+            <!-- ボタン本体 -->
+            <item
+                android:bottom="2dp"
+                android:left="2dp"
+                android:right="2dp"
+                android:top="2dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/accent_cyan" />
+                    <corners android:radius="@dimen/button_corner_radius" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>
+

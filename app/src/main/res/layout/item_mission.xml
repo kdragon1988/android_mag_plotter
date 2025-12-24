@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    item_mission.xml
+    
+    VISIONOID MAG PLOTTER - ミッションカードアイテム
+    スパイテック風のミッション表示カード
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/card_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/spacing_sm"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="@color/background_card"
+    app:cardCornerRadius="@dimen/card_corner_radius"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/border_primary"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- ステータスインジケーター -->
+        <View
+            android:id="@+id/status_indicator"
+            android:layout_width="4dp"
+            android:layout_height="match_parent"
+            android:background="@color/accent_cyan" />
+
+        <!-- コンテンツ -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_md">
+
+            <!-- ヘッダー行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!-- 場所名 -->
+                <TextView
+                    android:id="@+id/text_location_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.05"
+                    android:maxLines="1"
+                    android:textColor="@color/text_primary"
+                    android:textSize="@dimen/text_size_lg"
+                    android:textStyle="bold"
+                    tools:text="Tokyo Drone Show Area" />
+
+                <!-- ステータス -->
+                <TextView
+                    android:id="@+id/text_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_sm"
+                    android:background="@drawable/bg_status_badge"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.1"
+                    android:paddingStart="@dimen/spacing_sm"
+                    android:paddingTop="2dp"
+                    android:paddingEnd="@dimen/spacing_sm"
+                    android:paddingBottom="2dp"
+                    android:textColor="@color/accent_cyan"
+                    android:textSize="@dimen/text_size_xs"
+                    tools:text="ACTIVE" />
+
+            </LinearLayout>
+
+            <!-- 担当者 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="OPERATOR: "
+                    android:textColor="@color/text_hint"
+                    android:textSize="@dimen/text_size_xs" />
+
+                <TextView
+                    android:id="@+id/text_operator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_size_xs"
+                    tools:text="John Doe" />
+
+            </LinearLayout>
+
+            <!-- 日時 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="DATE: "
+                    android:textColor="@color/text_hint"
+                    android:textSize="@dimen/text_size_xs" />
+
+                <TextView
+                    android:id="@+id/text_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_size_xs"
+                    tools:text="2024/12/24 10:30" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- 矢印アイコン -->
+        <View
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginEnd="@dimen/spacing_md"
+            android:background="@drawable/ic_chevron_right" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
+

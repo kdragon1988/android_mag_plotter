@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    strings.xml
+    
+    VISIONOID MAG PLOTTER - 文字列リソース定義
+    アプリケーション内で使用するすべての文字列
+-->
+<resources>
+    <!-- アプリケーション -->
+    <string name="app_name">VISIONOID MAG PLOTTER</string>
+    <string name="app_name_short">MAG PLOTTER</string>
+    <string name="app_tagline">MAGNETIC FIELD ANALYZER</string>
+    
+    <!-- 画面タイトル -->
+    <string name="title_mission_list">MISSIONS</string>
+    <string name="title_mission_create">NEW MISSION</string>
+    <string name="title_mission_edit">EDIT MISSION</string>
+    <string name="title_measurement">FIELD MEASUREMENT</string>
+    <string name="title_settings">CONFIGURATION</string>
+    <string name="title_offline_map">OFFLINE MAPS</string>
+    
+    <!-- スプラッシュ画面 -->
+    <string name="splash_initializing">INITIALIZING SYSTEM...</string>
+    <string name="splash_loading_sensors">LOADING SENSORS...</string>
+    <string name="splash_calibrating">CALIBRATING...</string>
+    <string name="splash_ready">SYSTEM READY</string>
+    
+    <!-- ミッション関連 -->
+    <string name="mission_label_name">LOCATION NAME</string>
+    <string name="mission_label_operator">OPERATOR</string>
+    <string name="mission_label_memo">MEMO</string>
+    <string name="mission_label_date">DATE</string>
+    <string name="mission_label_reference">REFERENCE MAG (μT)</string>
+    <string name="mission_hint_name">Enter location name</string>
+    <string name="mission_hint_operator">Enter operator name</string>
+    <string name="mission_hint_memo">Enter memo (optional)</string>
+    <string name="mission_hint_reference">46.0</string>
+    <string name="mission_status_active">ACTIVE</string>
+    <string name="mission_status_completed">COMPLETED</string>
+    <string name="mission_points_count">%d POINTS</string>
+    <string name="mission_no_missions">NO MISSIONS FOUND</string>
+    <string name="mission_create_first">CREATE YOUR FIRST MISSION</string>
+    <string name="mission_delete_confirm">DELETE MISSION?</string>
+    <string name="mission_delete_message">All measurement data will be permanently deleted.</string>
+    <string name="mission_classified">CLASSIFIED</string>
+    
+    <!-- 計測関連 -->
+    <string name="measurement_label_mag">MAG FIELD</string>
+    <string name="measurement_label_noise">NOISE</string>
+    <string name="measurement_label_gps">GPS</string>
+    <string name="measurement_label_accuracy">ACCURACY</string>
+    <string name="measurement_label_interval">INTERVAL</string>
+    <string name="measurement_unit_ut">μT</string>
+    <string name="measurement_unit_meter">m</string>
+    <string name="measurement_unit_sec">sec</string>
+    <string name="measurement_mode_auto">AUTO</string>
+    <string name="measurement_mode_manual">MANUAL</string>
+    <string name="measurement_start">START</string>
+    <string name="measurement_stop">STOP</string>
+    <string name="measurement_record">RECORD</string>
+    <string name="measurement_status_idle">STANDBY</string>
+    <string name="measurement_status_recording">RECORDING</string>
+    <string name="measurement_status_paused">PAUSED</string>
+    <string name="measurement_waiting_gps">ACQUIRING GPS...</string>
+    <string name="measurement_no_sensor">MAGNETIC SENSOR NOT AVAILABLE</string>
+    
+    <!-- 設定関連 -->
+    <string name="settings_category_threshold">THRESHOLD SETTINGS</string>
+    <string name="settings_threshold_safe">SAFE THRESHOLD (μT)</string>
+    <string name="settings_threshold_danger">DANGER THRESHOLD (μT)</string>
+    <string name="settings_threshold_hint_safe">10</string>
+    <string name="settings_threshold_hint_danger">50</string>
+    <string name="settings_category_measurement">MEASUREMENT SETTINGS</string>
+    <string name="settings_interval_default">DEFAULT INTERVAL (sec)</string>
+    <string name="settings_category_map">MAP SETTINGS</string>
+    <string name="settings_heatmap_radius">HEATMAP RADIUS</string>
+    <string name="settings_category_about">ABOUT</string>
+    <string name="settings_version">VERSION</string>
+    
+    <!-- オフライン地図 -->
+    <string name="offline_map_download">DOWNLOAD AREA</string>
+    <string name="offline_map_downloading">DOWNLOADING...</string>
+    <string name="offline_map_progress">%d%%</string>
+    <string name="offline_map_complete">DOWNLOAD COMPLETE</string>
+    <string name="offline_map_error">DOWNLOAD FAILED</string>
+    <string name="offline_map_delete">DELETE TILES</string>
+    <string name="offline_map_size">SIZE: %s</string>
+    <string name="offline_map_select_area">SELECT DOWNLOAD AREA</string>
+    <string name="offline_map_no_tiles">NO OFFLINE TILES</string>
+    
+    <!-- ボタン/アクション -->
+    <string name="action_create">CREATE</string>
+    <string name="action_save">SAVE</string>
+    <string name="action_cancel">CANCEL</string>
+    <string name="action_delete">DELETE</string>
+    <string name="action_confirm">CONFIRM</string>
+    <string name="action_screenshot">SCREENSHOT</string>
+    <string name="action_settings">SETTINGS</string>
+    <string name="action_offline_maps">OFFLINE MAPS</string>
+    <string name="action_back">BACK</string>
+    
+    <!-- ステータス -->
+    <string name="status_safe">SAFE</string>
+    <string name="status_warning">WARNING</string>
+    <string name="status_danger">DANGER</string>
+    
+    <!-- エラーメッセージ -->
+    <string name="error_permission_location">Location permission is required</string>
+    <string name="error_permission_storage">Storage permission is required</string>
+    <string name="error_gps_disabled">GPS is disabled. Please enable it.</string>
+    <string name="error_sensor_unavailable">Magnetic sensor is not available</string>
+    <string name="error_save_failed">Failed to save data</string>
+    <string name="error_screenshot_failed">Failed to save screenshot</string>
+    <string name="error_required_field">This field is required</string>
+    <string name="error_invalid_value">Invalid value</string>
+    
+    <!-- 成功メッセージ -->
+    <string name="success_mission_created">Mission created</string>
+    <string name="success_mission_saved">Mission saved</string>
+    <string name="success_mission_deleted">Mission deleted</string>
+    <string name="success_screenshot_saved">Screenshot saved</string>
+    
+    <!-- 確認ダイアログ -->
+    <string name="dialog_exit_confirm">Exit without saving?</string>
+    <string name="dialog_exit_message">Unsaved changes will be lost.</string>
+</resources>
+

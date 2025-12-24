@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    themes.xml
+    
+    VISIONOID MAG PLOTTER - テーマ定義
+    スパイテック（ミッションインポッシブル風）UIテーマ
+-->
+<resources>
+    <!-- ベーススタイル（親スタイル用） -->
+    <style name="SpyTech" parent="" />
+    <style name="SpyTech.Text" parent="" />
+
+    <!-- メインテーマ -->
+    <style name="Theme.VisionoidMagPlotter" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- プライマリカラー -->
+        <item name="colorPrimary">@color/accent_cyan</item>
+        <item name="colorPrimaryDark">@color/accent_cyan_dark</item>
+        <item name="colorPrimaryVariant">@color/accent_cyan_dark</item>
+        <item name="colorOnPrimary">@color/background_primary</item>
+        
+        <!-- セカンダリカラー -->
+        <item name="colorSecondary">@color/accent_orange</item>
+        <item name="colorSecondaryVariant">@color/accent_orange_dark</item>
+        <item name="colorOnSecondary">@color/background_primary</item>
+        
+        <!-- 背景 -->
+        <item name="android:colorBackground">@color/background_primary</item>
+        <item name="colorSurface">@color/background_panel</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        
+        <!-- エラーカラー -->
+        <item name="colorError">@color/accent_red</item>
+        <item name="colorOnError">@color/text_primary</item>
+        
+        <!-- ステータスバー -->
+        <item name="android:statusBarColor">@color/background_primary</item>
+        <item name="android:navigationBarColor">@color/background_primary</item>
+        
+        <!-- テキスト -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        
+        <!-- ウィンドウ -->
+        <item name="android:windowBackground">@color/background_primary</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        
+        <!-- スタイル適用 -->
+        <item name="buttonStyle">@style/SpyTech.Button</item>
+        <item name="editTextStyle">@style/SpyTech.EditText</item>
+        <item name="cardViewStyle">@style/SpyTech.Card</item>
+    </style>
+    
+    <!-- スプラッシュ画面テーマ -->
+    <style name="Theme.VisionoidMagPlotter.Splash">
+        <item name="android:windowBackground">@color/background_primary</item>
+        <item name="android:statusBarColor">@color/background_primary</item>
+        <item name="android:navigationBarColor">@color/background_primary</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">false</item>
+    </style>
+    
+    <!-- ボタンスタイル -->
+    <style name="SpyTech.Button" parent="Widget.Material3.Button">
+        <item name="android:textColor">@color/background_primary</item>
+        <item name="android:textSize">@dimen/text_size_md</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.1</item>
+        <item name="android:minHeight">@dimen/button_height</item>
+        <item name="backgroundTint">@color/accent_cyan</item>
+        <item name="cornerRadius">@dimen/button_corner_radius</item>
+    </style>
+    
+    <!-- アウトラインボタンスタイル -->
+    <style name="SpyTech.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">@color/accent_cyan</item>
+        <item name="android:textSize">@dimen/text_size_md</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.1</item>
+        <item name="strokeColor">@color/accent_cyan</item>
+        <item name="strokeWidth">@dimen/border_medium</item>
+        <item name="cornerRadius">@dimen/button_corner_radius</item>
+    </style>
+    
+    <!-- テキストボタンスタイル -->
+    <style name="SpyTech.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/accent_cyan</item>
+        <item name="android:textSize">@dimen/text_size_md</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.1</item>
+    </style>
+    
+    <!-- 危険ボタンスタイル -->
+    <style name="SpyTech.Button.Danger" parent="SpyTech.Button">
+        <item name="backgroundTint">@color/accent_red</item>
+    </style>
+    
+    <!-- EditTextスタイル -->
+    <style name="SpyTech.EditText" parent="Widget.Material3.TextInputEditText.OutlinedBox">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        <item name="android:textSize">@dimen/text_size_lg</item>
+        <item name="android:background">@drawable/bg_edit_text</item>
+        <item name="android:paddingStart">@dimen/spacing_md</item>
+        <item name="android:paddingEnd">@dimen/spacing_md</item>
+        <item name="android:paddingTop">@dimen/spacing_sm</item>
+        <item name="android:paddingBottom">@dimen/spacing_sm</item>
+    </style>
+    
+    <!-- TextInputLayoutスタイル -->
+    <style name="SpyTech.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/accent_cyan</item>
+        <item name="boxStrokeWidth">@dimen/border_thin</item>
+        <item name="boxCornerRadiusTopStart">@dimen/button_corner_radius</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/button_corner_radius</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/button_corner_radius</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/button_corner_radius</item>
+        <item name="hintTextColor">@color/accent_cyan</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+    </style>
+    
+    <!-- カードスタイル -->
+    <style name="SpyTech.Card" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@color/background_card</item>
+        <item name="cardCornerRadius">@dimen/card_corner_radius</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/border_primary</item>
+        <item name="strokeWidth">@dimen/border_thin</item>
+    </style>
+    
+    <!-- パネルスタイル -->
+    <style name="SpyTech.Panel">
+        <item name="android:background">@drawable/bg_panel</item>
+        <item name="android:padding">@dimen/panel_padding</item>
+    </style>
+    
+    <!-- HUDテキストスタイル -->
+    <style name="SpyTech.Text.HUD">
+        <item name="android:textColor">@color/accent_cyan</item>
+        <item name="android:textSize">@dimen/text_size_sm</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:letterSpacing">0.15</item>
+    </style>
+    
+    <!-- HUD値表示スタイル -->
+    <style name="SpyTech.Text.HUD.Value">
+        <item name="android:textSize">@dimen/text_size_xxl</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <!-- HUDラベルスタイル -->
+    <style name="SpyTech.Text.HUD.Label">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">@dimen/text_size_xs</item>
+    </style>
+    
+    <!-- タイトルテキストスタイル -->
+    <style name="SpyTech.Text.Title">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">@dimen/text_size_xl</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.1</item>
+    </style>
+    
+    <!-- サブタイトルスタイル -->
+    <style name="SpyTech.Text.Subtitle">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">@dimen/text_size_sm</item>
+        <item name="android:letterSpacing">0.05</item>
+    </style>
+    
+    <!-- ツールバースタイル -->
+    <style name="SpyTech.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/background_panel</item>
+        <item name="titleTextColor">@color/text_primary</item>
+        <item name="subtitleTextColor">@color/text_secondary</item>
+    </style>
+    
+    <!-- FABスタイル -->
+    <style name="SpyTech.FAB" parent="Widget.Material3.FloatingActionButton.Primary">
+        <item name="backgroundTint">@color/accent_cyan</item>
+        <item name="tint">@color/background_primary</item>
+    </style>
+    
+    <!-- スライダースタイル -->
+    <style name="SpyTech.Slider" parent="Widget.Material3.Slider">
+        <item name="thumbColor">@color/accent_cyan</item>
+        <item name="trackColorActive">@color/accent_cyan</item>
+        <item name="trackColorInactive">@color/background_elevated</item>
+        <item name="tickColorActive">@color/accent_cyan</item>
+        <item name="tickColorInactive">@color/text_hint</item>
+    </style>
+    
+    <!-- スイッチスタイル -->
+    <style name="SpyTech.Switch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
+        <item name="thumbTint">@color/accent_cyan</item>
+        <item name="trackTint">@color/background_elevated</item>
+    </style>
+</resources>
+

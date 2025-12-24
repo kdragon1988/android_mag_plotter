@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_offline_map.xml
+    
+    VISIONOID MAG PLOTTER - オフライン地図管理画面レイアウト
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_primary"
+    tools:context=".ui.offlinemap.OfflineMapActivity">
+
+    <!-- ツールバー -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background_panel">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/background_panel"
+            app:navigationIcon="@drawable/ic_back"
+            app:titleTextColor="@color/accent_cyan"
+            app:titleTextAppearance="@style/SpyTech.Text.Title" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- メインコンテンツ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- 説明パネル -->
+        <LinearLayout
+            android:id="@+id/selection_instructions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_hud_panel"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_md">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text="@string/offline_map_select_area"
+                android:textColor="@color/accent_cyan"
+                android:textSize="@dimen/text_size_sm" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:fontFamily="monospace"
+                android:text="Pan and zoom to select the download area.\nZoom levels 15-19 will be downloaded."
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_xs" />
+
+        </LinearLayout>
+
+        <!-- 地図 -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <org.osmdroid.views.MapView
+                android:id="@+id/map_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- キャッシュサイズ表示 -->
+            <TextView
+                android:id="@+id/text_cache_size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="@dimen/spacing_sm"
+                android:background="@drawable/bg_overlay_panel"
+                android:fontFamily="monospace"
+                android:padding="@dimen/spacing_sm"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_xs"
+                tools:text="SIZE: 12.5 MB" />
+
+        </FrameLayout>
+
+        <!-- コントロールパネル -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_panel"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_md">
+
+            <!-- プログレスバー -->
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/progress_splash"
+                android:visibility="gone" />
+
+            <!-- ステータス -->
+            <TextView
+                android:id="@+id/text_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:fontFamily="monospace"
+                android:text=""
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_sm" />
+
+            <!-- ボタン行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/button_clear"
+                    style="@style/SpyTech.Button.Outlined"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginEnd="@dimen/spacing_sm"
+                    android:layout_weight="1"
+                    android:text="@string/offline_map_delete" />
+
+                <Button
+                    android:id="@+id/button_download"
+                    style="@style/SpyTech.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginStart="@dimen/spacing_sm"
+                    android:layout_weight="1"
+                    android:text="@string/offline_map_download" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+

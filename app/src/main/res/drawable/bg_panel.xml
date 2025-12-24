@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    bg_panel.xml
+    
+    スパイテックパネル背景
+    グロー効果のあるボーダー付きパネル
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 外側のグロー効果 -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/border_glow" />
+            <corners android:radius="@dimen/panel_corner_radius" />
+        </shape>
+    </item>
+    
+    <!-- ボーダー -->
+    <item
+        android:bottom="@dimen/border_thin"
+        android:left="@dimen/border_thin"
+        android:right="@dimen/border_thin"
+        android:top="@dimen/border_thin">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/border_accent" />
+            <corners android:radius="@dimen/panel_corner_radius" />
+        </shape>
+    </item>
+    
+    <!-- 内側の背景 -->
+    <item
+        android:bottom="@dimen/border_medium"
+        android:left="@dimen/border_medium"
+        android:right="@dimen/border_medium"
+        android:top="@dimen/border_medium">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/background_panel" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+</layer-list>
+

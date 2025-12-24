@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ic_launcher_foreground.xml
+    
+    アプリアイコンのフォアグラウンド
+    磁場センサー風のデザイン
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 外側のリング -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,27A27,27 0,0 1,81 54A27,27 0,0 1,54 81A27,27 0,0 1,27 54A27,27 0,0 1,54 27"
+        android:strokeWidth="2"
+        android:strokeColor="#00F5FF" />
+
+    <!-- 中間のリング -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,35A19,19 0,0 1,73 54A19,19 0,0 1,54 73A19,19 0,0 1,35 54A19,19 0,0 1,54 35"
+        android:strokeWidth="1.5"
+        android:strokeColor="#00F5FF" />
+
+    <!-- 内側のリング -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,43A11,11 0,0 1,65 54A11,11 0,0 1,54 65A11,11 0,0 1,43 54A11,11 0,0 1,54 43"
+        android:strokeWidth="1"
+        android:strokeColor="#00F5FF" />
+
+    <!-- 中央のドット -->
+    <path
+        android:fillColor="#00F5FF"
+        android:pathData="M54,50A4,4 0,0 1,58 54A4,4 0,0 1,54 58A4,4 0,0 1,50 54A4,4 0,0 1,54 50" />
+
+    <!-- 十字線（水平） -->
+    <path
+        android:fillColor="#00F5FF"
+        android:pathData="M30,53h10v2h-10z" />
+
+    <path
+        android:fillColor="#00F5FF"
+        android:pathData="M68,53h10v2h-10z" />
+
+    <!-- 十字線（垂直） -->
+    <path
+        android:fillColor="#00F5FF"
+        android:pathData="M53,30v10h2v-10z" />
+
+    <path
+        android:fillColor="#00F5FF"
+        android:pathData="M53,68v10h2v-10z" />
+
+</vector>
+

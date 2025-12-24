@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    corner_decoration_top_right.xml
+    
+    コーナー装飾（右上）
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 水平線 -->
+    <item
+        android:bottom="38dp"
+        android:left="0dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/accent_cyan" />
+            <size
+                android:width="40dp"
+                android:height="2dp" />
+        </shape>
+    </item>
+    
+    <!-- 垂直線 -->
+    <item
+        android:bottom="0dp"
+        android:left="38dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/accent_cyan" />
+            <size
+                android:width="2dp"
+                android:height="40dp" />
+        </shape>
+    </item>
+</layer-list>
+

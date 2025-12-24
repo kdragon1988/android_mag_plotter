@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    colors.xml
+    
+    VISIONOID MAG PLOTTER - カラーパレット定義
+    スパイテック（ミッションインポッシブル風）UIのカラースキーム
+-->
+<resources>
+    <!-- ベースカラー（ダークテーマ） -->
+    <color name="background_primary">#0A0A0F</color>
+    <color name="background_secondary">#12121A</color>
+    <color name="background_panel">#1A1A2E</color>
+    <color name="background_card">#1E1E32</color>
+    <color name="background_elevated">#252540</color>
+    
+    <!-- アクセントカラー -->
+    <color name="accent_cyan">#00F5FF</color>
+    <color name="accent_cyan_dark">#00B8C4</color>
+    <color name="accent_cyan_glow">#4DFBFF</color>
+    <color name="accent_orange">#FF6B35</color>
+    <color name="accent_orange_dark">#CC5629</color>
+    <color name="accent_red">#FF0055</color>
+    <color name="accent_red_dark">#CC0044</color>
+    <color name="accent_green">#00FF88</color>
+    <color name="accent_green_dark">#00CC6B</color>
+    <color name="accent_yellow">#FFD93D</color>
+    
+    <!-- テキストカラー -->
+    <color name="text_primary">#E0E0E0</color>
+    <color name="text_secondary">#9E9E9E</color>
+    <color name="text_hint">#6B6B6B</color>
+    <color name="text_accent">#00F5FF</color>
+    <color name="text_warning">#FF6B35</color>
+    <color name="text_danger">#FF0055</color>
+    
+    <!-- グリッド/スキャンライン -->
+    <color name="grid_line">#1A3A3A</color>
+    <color name="scan_line">#00F5FF</color>
+    <color name="scan_line_alpha">#3300F5FF</color>
+    
+    <!-- ステータスカラー（磁場ノイズレベル） -->
+    <color name="status_safe">#00FF88</color>
+    <color name="status_warning">#FFD93D</color>
+    <color name="status_danger">#FF0055</color>
+    
+    <!-- ヒートマップカラー -->
+    <color name="heatmap_safe">#8000FF88</color>
+    <color name="heatmap_warning">#80FFD93D</color>
+    <color name="heatmap_danger">#80FF0055</color>
+    
+    <!-- ボタン -->
+    <color name="button_primary">#00F5FF</color>
+    <color name="button_primary_pressed">#00B8C4</color>
+    <color name="button_secondary">#1A1A2E</color>
+    <color name="button_danger">#FF0055</color>
+    
+    <!-- ボーダー -->
+    <color name="border_primary">#2A2A4A</color>
+    <color name="border_accent">#00F5FF</color>
+    <color name="border_glow">#4D00F5FF</color>
+    
+    <!-- オーバーレイ -->
+    <color name="overlay_dark">#CC0A0A0F</color>
+    <color name="overlay_light">#331A1A2E</color>
+    
+    <!-- シャドウ/グロー -->
+    <color name="glow_cyan">#6600F5FF</color>
+    <color name="glow_red">#66FF0055</color>
+    <color name="glow_green">#6600FF88</color>
+</resources>
+

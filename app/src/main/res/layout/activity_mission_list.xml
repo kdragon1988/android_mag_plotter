@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_mission_list.xml
+    
+    VISIONOID MAG PLOTTER - ミッション一覧画面レイアウト
+    スパイテック風のミッションカードリスト
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_primary"
+    tools:context=".ui.mission.MissionListActivity">
+
+    <!-- ツールバー -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background_panel">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/background_panel"
+            app:titleTextColor="@color/accent_cyan"
+            app:titleTextAppearance="@style/SpyTech.Text.Title" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- メインコンテンツ -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- ミッション一覧 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_missions"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="@dimen/spacing_md"
+            tools:listitem="@layout/item_mission" />
+
+        <!-- 空表示 -->
+        <LinearLayout
+            android:id="@+id/empty_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- アイコン -->
+            <View
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:background="@drawable/ic_empty_missions" />
+
+            <!-- タイトル -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.1"
+                android:text="@string/mission_no_missions"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_size_lg" />
+
+            <!-- サブタイトル -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:fontFamily="monospace"
+                android:text="@string/mission_create_first"
+                android:textColor="@color/text_hint"
+                android:textSize="@dimen/text_size_sm" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <!-- FAB（新規作成） -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_create"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:contentDescription="@string/action_create"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="@color/accent_cyan"
+        app:tint="@color/background_primary" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+

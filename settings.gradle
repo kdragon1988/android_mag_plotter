@@ -1,0 +1,28 @@
+/**
+ * settings.gradle
+ * 
+ * VISIONOID MAG PLOTTER - プロジェクト設定ファイル
+ * Gradle プロジェクトの基本設定を定義
+ */
+
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // osmdroid用
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+rootProject.name = "VisionoidMagPlotter"
+include ':app'
+
