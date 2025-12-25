@@ -75,7 +75,7 @@ public class MagPlotterApplication extends Application {
         
         // User-Agent を設定（OSM のポリシー準拠）
         Configuration.getInstance().setUserAgentValue(
-            getPackageName() + "/1.0.0"
+            getPackageName() + "/2.0.0"
         );
         
         // タイルキャッシュディレクトリを設定

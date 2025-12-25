@@ -358,7 +358,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_xs"
                     android:fontFamily="monospace"
-                    android:text="v1.0.0"
+                    android:text="v2.0.0"
                     android:textColor="@color/text_secondary"
                     android:textSize="@dimen/text_size_sm" />
 
