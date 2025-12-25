@@ -149,6 +149,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private Marker currentLocationMarker;
     private List<Polygon> heatmapPolygons = new ArrayList<>();
     
+    /** 地図の初期センタリングが完了したかどうか */
+    private boolean isInitialCenterSet = false;
+    
     /** 現在の地図タイプ（0: 標準, 1: 衛星, 2: 地形） */
     private int currentMapType = 0;
     
@@ -474,6 +477,17 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
             updateHeatmap(points);
             // 統計を更新
             viewModel.updateStatistics(points);
+            
+            // 初回のみ: 最初の計測点があればその位置にセンタリング
+            if (!isInitialCenterSet && points != null && !points.isEmpty()) {
+                MeasurementPoint firstPoint = points.get(0);
+                GeoPoint firstPointLocation = new GeoPoint(
+                        firstPoint.getLatitude(), 
+                        firstPoint.getLongitude()
+                );
+                mapController.setCenter(firstPointLocation);
+                isInitialCenterSet = true;
+            }
         });
         
         // 統計データを監視
@@ -766,9 +780,13 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
             GeoPoint geoPoint = new GeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
             currentLocationMarker.setPosition(geoPoint);
 
-            // 初回のみセンタリング
-            if (mapView.getMapCenter().getLatitude() == 0 && mapView.getMapCenter().getLongitude() == 0) {
+            // 初回のみセンタリング（計測点がない場合のみ現在位置にセンタリング）
+            // 計測点がある場合は setupViewModel() で最初の計測点にセンタリング済み
+            if (!isInitialCenterSet && 
+                mapView.getMapCenter().getLatitude() == 0 && 
+                mapView.getMapCenter().getLongitude() == 0) {
                 mapController.setCenter(geoPoint);
+                isInitialCenterSet = true;
             }
 
             mapView.invalidate();
