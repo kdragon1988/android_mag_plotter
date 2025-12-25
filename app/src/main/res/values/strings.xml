@@ -50,6 +50,8 @@
     <string name="measurement_label_gps">GPS</string>
     <string name="measurement_label_accuracy">ACCURACY</string>
     <string name="measurement_label_interval">INTERVAL</string>
+    <string name="measurement_label_max">MAX</string>
+    <string name="measurement_label_avg">AVG</string>
     <string name="measurement_unit_ut">μT</string>
     <string name="measurement_unit_meter">m</string>
     <string name="measurement_unit_sec">sec</string>

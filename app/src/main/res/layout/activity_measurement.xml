@@ -86,6 +86,50 @@
                         android:text="@string/measurement_unit_ut"
                         android:textSize="@dimen/text_size_sm" />
                 </LinearLayout>
+
+                <!-- MAG FIELD統計（MAX/AVG） -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/SpyTech.Text.HUD.Label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/measurement_label_max"
+                        android:textSize="@dimen/text_size_xs" />
+
+                    <TextView
+                        android:id="@+id/text_mag_max"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:fontFamily="monospace"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="@dimen/text_size_xs"
+                        tools:text="48.2" />
+
+                    <TextView
+                        style="@style/SpyTech.Text.HUD.Label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/measurement_label_avg"
+                        android:textSize="@dimen/text_size_xs" />
+
+                    <TextView
+                        android:id="@+id/text_mag_avg"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:fontFamily="monospace"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="@dimen/text_size_xs"
+                        tools:text="46.1" />
+
+                </LinearLayout>
             </LinearLayout>
 
             <!-- 区切り線 -->
@@ -132,6 +176,50 @@
                         android:layout_marginStart="4dp"
                         android:text="@string/measurement_unit_ut"
                         android:textSize="@dimen/text_size_sm" />
+                </LinearLayout>
+
+                <!-- NOISE統計（MAX/AVG） -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/SpyTech.Text.HUD.Label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/measurement_label_max"
+                        android:textSize="@dimen/text_size_xs" />
+
+                    <TextView
+                        android:id="@+id/text_noise_max"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:fontFamily="monospace"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="@dimen/text_size_xs"
+                        tools:text="5.8" />
+
+                    <TextView
+                        style="@style/SpyTech.Text.HUD.Label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/measurement_label_avg"
+                        android:textSize="@dimen/text_size_xs" />
+
+                    <TextView
+                        android:id="@+id/text_noise_avg"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="2dp"
+                        android:fontFamily="monospace"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="@dimen/text_size_xs"
+                        tools:text="2.1" />
+
                 </LinearLayout>
             </LinearLayout>
 

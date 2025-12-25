@@ -201,6 +201,12 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private Button buttonMeasure;
     private Button buttonStartStop;
     private View panelStatus;
+    
+    // 統計表示UI要素
+    private TextView textMagMax;
+    private TextView textMagAvg;
+    private TextView textNoiseMax;
+    private TextView textNoiseAvg;
 
     /** 日付フォーマット（スクリーンショット用） */
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
@@ -260,10 +266,17 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         buttonMeasure = findViewById(R.id.button_measure);
         buttonStartStop = findViewById(R.id.button_start_stop);
         panelStatus = findViewById(R.id.panel_status);
+        
+        // 統計表示UI要素
+        textMagMax = findViewById(R.id.text_mag_max);
+        textMagAvg = findViewById(R.id.text_mag_avg);
+        textNoiseMax = findViewById(R.id.text_noise_max);
+        textNoiseAvg = findViewById(R.id.text_noise_avg);
 
         // 初期値設定
         updateIntervalDisplay(measurementIntervalMs);
         updateSatelliteDisplay();
+        updateStatisticsDisplay(new MeasurementViewModel.MagStatistics());
     }
 
     /**
@@ -459,6 +472,15 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         viewModel.getPoints(missionId).observe(this, points -> {
             updatePointCount(points != null ? points.size() : 0);
             updateHeatmap(points);
+            // 統計を更新
+            viewModel.updateStatistics(points);
+        });
+        
+        // 統計データを監視
+        viewModel.getMagStatistics().observe(this, statistics -> {
+            if (statistics != null) {
+                updateStatisticsDisplay(statistics);
+            }
         });
     }
 
@@ -769,6 +791,40 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
      */
     private void updatePointCount(int count) {
         textPointCount.setText(String.format(Locale.US, getString(R.string.mission_points_count), count));
+    }
+    
+    /**
+     * 統計表示を更新
+     * 
+     * @param statistics 磁場統計データ
+     */
+    private void updateStatisticsDisplay(MeasurementViewModel.MagStatistics statistics) {
+        if (statistics.pointCount == 0) {
+            // データがない場合は "--" を表示
+            textMagMax.setText("--");
+            textMagAvg.setText("--");
+            textNoiseMax.setText("--");
+            textNoiseAvg.setText("--");
+        } else {
+            // MAG FIELDの統計
+            textMagMax.setText(String.format(Locale.US, "%.1f", statistics.magFieldMax));
+            textMagAvg.setText(String.format(Locale.US, "%.1f", statistics.magFieldAvg));
+            
+            // NOISEの統計
+            textNoiseMax.setText(String.format(Locale.US, "%.1f", statistics.noiseMax));
+            textNoiseAvg.setText(String.format(Locale.US, "%.1f", statistics.noiseAvg));
+            
+            // NOISEのMAXに応じて色を変更
+            if (currentMission != null) {
+                if (statistics.noiseMax < currentMission.getSafeThreshold()) {
+                    textNoiseMax.setTextColor(getColor(R.color.status_safe));
+                } else if (statistics.noiseMax < currentMission.getDangerThreshold()) {
+                    textNoiseMax.setTextColor(getColor(R.color.status_warning));
+                } else {
+                    textNoiseMax.setTextColor(getColor(R.color.status_danger));
+                }
+            }
+        }
     }
 
     /**
