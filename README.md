@@ -5,7 +5,14 @@
 ![Platform](https://img.shields.io/badge/Platform-Android%2015-green)
 ![Language](https://img.shields.io/badge/Language-Java-orange)
 ![License](https://img.shields.io/badge/License-Proprietary-blue)
-![Version](https://img.shields.io/badge/Version-2.0.0-blue)
+![Version](https://img.shields.io/badge/Version-2.1.0-blue)
+
+## 📱 プラットフォーム
+
+| バージョン | リポジトリ | 状態 |
+|-----------|-----------|------|
+| **Android（安定版）** | このリポジトリ | ✅ v2.1.0 リリース済み |
+| **Flutter（iOS/Android）** | [mag_plotter_flutter](https://github.com/kdragon1988/mag_plotter_flutter) | 🚧 開発中 |
 
 ## 概要
 
@@ -351,6 +358,7 @@ python download_did_data.py
 
 | バージョン | リリース日 | 主な変更点 |
 |-----------|-----------|-----------|
+| v2.1.0 | 2024-12-25 | 地図作図機能追加（ポリゴン/ライン/サークル描画、距離・面積計算） |
 | v2.0.0 | 2024-12-25 | GeoJSONマップレイヤー機能追加（DID/空港制限/飛行禁止） |
 | v1.0.0 | 2024-12-01 | 初回リリース |
 
