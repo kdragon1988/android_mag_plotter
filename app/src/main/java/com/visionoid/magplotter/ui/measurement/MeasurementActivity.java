@@ -72,6 +72,7 @@ import com.visionoid.magplotter.data.model.Mission;
 import com.visionoid.magplotter.ui.map.layer.LayerDisplayStyle;
 import com.visionoid.magplotter.ui.map.layer.LayerType;
 import com.visionoid.magplotter.ui.map.layer.MapLayerManager;
+import com.visionoid.magplotter.ui.view.NoiseLevelGauge;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase;
@@ -210,6 +211,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private TextView textMagAvg;
     private TextView textNoiseMax;
     private TextView textNoiseAvg;
+    
+    // レベルゲージ
+    private NoiseLevelGauge noiseLevelGauge;
 
     /** 日付フォーマット（スクリーンショット用） */
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
@@ -275,6 +279,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         textMagAvg = findViewById(R.id.text_mag_avg);
         textNoiseMax = findViewById(R.id.text_noise_max);
         textNoiseAvg = findViewById(R.id.text_noise_avg);
+        
+        // レベルゲージ
+        noiseLevelGauge = findViewById(R.id.noise_level_gauge);
 
         // 初期値設定
         updateIntervalDisplay(measurementIntervalMs);
@@ -850,6 +857,13 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
 
         // ノイズレベルに応じた色分け
         if (currentMission != null) {
+            // レベルゲージを更新
+            noiseLevelGauge.setThresholds(
+                    currentMission.getSafeThreshold(),
+                    currentMission.getDangerThreshold()
+            );
+            noiseLevelGauge.setNoiseValue(currentNoise);
+            
             if (currentNoise < currentMission.getSafeThreshold()) {
                 textNoiseValue.setTextColor(getColor(R.color.status_safe));
                 panelStatus.setBackgroundResource(R.drawable.bg_status_safe);
