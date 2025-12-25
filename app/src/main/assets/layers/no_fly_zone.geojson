@@ -1,0 +1,9 @@
+{
+  "type": "FeatureCollection",
+  "name": "小型無人機等飛行禁止区域",
+  "description": "プレースホルダーデータ - 実際のデータは警察庁の情報を元に作成してください",
+  "source": "https://www.npa.go.jp/bureau/security/kogatamujinki/shitei.html",
+  "note": "このファイルを正式なGeoJSONデータで置き換えてください",
+  "features": []
+}
+

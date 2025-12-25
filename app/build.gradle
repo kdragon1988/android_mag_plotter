@@ -41,6 +41,18 @@ android {
     buildFeatures {
         viewBinding true
     }
+
+    // 大きなアセットファイル（GeoJSON）を圧縮しない
+    aaptOptions {
+        noCompress "geojson", "json"
+    }
+
+    // アセットのパッケージング設定
+    packaging {
+        resources {
+            excludes += ['META-INF/LICENSE.txt', 'META-INF/NOTICE.txt']
+        }
+    }
 }
 
 dependencies {
@@ -81,4 +93,5 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
+
 

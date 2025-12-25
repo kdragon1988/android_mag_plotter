@@ -1,0 +1,9 @@
+{
+  "type": "FeatureCollection",
+  "name": "空港等周辺の飛行禁止区域",
+  "description": "プレースホルダーデータ - 実際のデータは国土交通省航空局の情報を元に作成してください",
+  "source": "https://www.mlit.go.jp/koku/koku_tk2_000023.html",
+  "note": "このファイルを正式なGeoJSONデータで置き換えてください",
+  "features": []
+}
+

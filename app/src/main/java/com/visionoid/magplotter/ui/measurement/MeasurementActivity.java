@@ -23,14 +23,18 @@ package com.visionoid.magplotter.ui.measurement;
 
 import android.Manifest;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.util.Log;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.GnssStatus;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -59,10 +63,15 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.visionoid.magplotter.R;
+import com.visionoid.magplotter.data.layer.LayerDataRepository;
 import com.visionoid.magplotter.data.model.MeasurementPoint;
 import com.visionoid.magplotter.data.model.Mission;
+import com.visionoid.magplotter.ui.map.layer.LayerDisplayStyle;
+import com.visionoid.magplotter.ui.map.layer.LayerType;
+import com.visionoid.magplotter.ui.map.layer.MapLayerManager;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase;
@@ -74,8 +83,6 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polygon;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
@@ -83,6 +90,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+import android.widget.AdapterView;
 
 /**
  * 計測画面アクティビティ
@@ -119,6 +130,12 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private LocationCallback locationCallback;
     private Location currentLocation;
     private float currentAccuracy = 0;
+    
+    // GNSS（サテライト）関連
+    private LocationManager locationManager;
+    private GnssStatus.Callback gnssStatusCallback;
+    private int satelliteCount = 0;        // 捕捉中のサテライト数
+    private int usedSatelliteCount = 0;    // 測位に使用中のサテライト数
 
     // 計測制御
     private Handler measurementHandler;
@@ -134,6 +151,10 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     
     /** 現在の地図タイプ（0: 標準, 1: 衛星, 2: 地形） */
     private int currentMapType = 0;
+    
+    // レイヤー関連
+    private MapLayerManager mapLayerManager;
+    private LayerDataRepository layerDataRepository;
     
     /** Esri World Imagery（衛星写真）タイルソース */
     private static final OnlineTileSourceBase ESRI_WORLD_IMAGERY = new XYTileSource(
@@ -174,6 +195,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private TextView textAccuracy;
     private TextView textPointCount;
     private TextView textIntervalValue;
+    private TextView textSatelliteCount;
     private SwitchMaterial switchAutoMode;
     private SeekBar seekBarInterval;
     private Button buttonMeasure;
@@ -202,6 +224,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         initializeSensors();
         initializeLocation();
         initializeMap();
+        initializeMapLayers();
         setupViewModel();
         setupListeners();
 
@@ -231,6 +254,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         textAccuracy = findViewById(R.id.text_accuracy);
         textPointCount = findViewById(R.id.text_point_count);
         textIntervalValue = findViewById(R.id.text_interval_value);
+        textSatelliteCount = findViewById(R.id.text_satellite_count);
         switchAutoMode = findViewById(R.id.switch_auto_mode);
         seekBarInterval = findViewById(R.id.seekbar_interval);
         buttonMeasure = findViewById(R.id.button_measure);
@@ -239,6 +263,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
 
         // 初期値設定
         updateIntervalDisplay(measurementIntervalMs);
+        updateSatelliteDisplay();
     }
 
     /**
@@ -260,6 +285,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
      */
     private void initializeLocation() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         locationCallback = new LocationCallback() {
             @Override
@@ -271,6 +297,37 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                     updateLocationUI();
                     updateMapLocation();
                 }
+            }
+        };
+        
+        // GNSS（サテライト）ステータスコールバック
+        gnssStatusCallback = new GnssStatus.Callback() {
+            @Override
+            public void onSatelliteStatusChanged(@NonNull GnssStatus status) {
+                int total = status.getSatelliteCount();
+                int used = 0;
+                
+                // 測位に使用されているサテライトをカウント
+                for (int i = 0; i < total; i++) {
+                    if (status.usedInFix(i)) {
+                        used++;
+                    }
+                }
+                
+                satelliteCount = total;
+                usedSatelliteCount = used;
+                
+                runOnUiThread(() -> updateSatelliteDisplay());
+            }
+            
+            @Override
+            public void onStarted() {
+                Log.d("MeasurementActivity", "GNSS started");
+            }
+            
+            @Override
+            public void onStopped() {
+                Log.d("MeasurementActivity", "GNSS stopped");
             }
         };
     }
@@ -289,6 +346,97 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         currentLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
         currentLocationMarker.setTitle("Current Location");
         mapView.getOverlays().add(currentLocationMarker);
+    }
+
+    /**
+     * マップレイヤーを初期化
+     */
+    private void initializeMapLayers() {
+        mapLayerManager = new MapLayerManager(this, mapView);
+        layerDataRepository = new LayerDataRepository(this);
+
+        // 保存された表示状態に基づいてレイヤーを読み込み
+        for (LayerType layerType : LayerType.values()) {
+            if (mapLayerManager.isLayerVisible(layerType)) {
+                loadLayerData(layerType);
+            }
+        }
+    }
+
+    /**
+     * レイヤーデータを読み込み
+     * 
+     * @param layerType レイヤータイプ
+     */
+    private void loadLayerData(LayerType layerType) {
+        Log.d("MeasurementActivity", "loadLayerData開始: " + layerType.getId());
+        Toast.makeText(this, "レイヤー読み込み中: " + getString(layerType.getNameResId()), Toast.LENGTH_SHORT).show();
+        
+        layerDataRepository.getLayerData(layerType, false, new LayerDataRepository.DataCallback() {
+            @Override
+            public void onSuccess(String geoJson, boolean fromCache) {
+                final int geoJsonSize = geoJson != null ? geoJson.length() : 0;
+                Log.d("MeasurementActivity", "レイヤーデータ取得成功: " + layerType.getId() + 
+                        ", fromCache=" + fromCache + ", size=" + geoJsonSize);
+                
+                runOnUiThread(() -> {
+                    // デバッグ: データサイズを表示
+                    Toast.makeText(MeasurementActivity.this, 
+                            "GeoJSON取得: " + (geoJsonSize / 1024) + "KB", 
+                            Toast.LENGTH_SHORT).show();
+                    
+                    if (geoJson == null || geoJsonSize == 0) {
+                        Toast.makeText(MeasurementActivity.this, 
+                                "エラー: GeoJSONが空です", Toast.LENGTH_LONG).show();
+                        mapLayerManager.setLayerVisibility(layerType, false);
+                        return;
+                    }
+                    
+                    mapLayerManager.addLayer(layerType, geoJson);
+                    
+                    // デバッグ: パース結果を表示
+                    boolean isLoaded = mapLayerManager.isLayerLoaded(layerType);
+                    Object center = mapLayerManager.getLayerCenter(layerType);
+                    int polygonCount = mapLayerManager.getLayerPolygonCount(layerType);
+                    
+                    Toast.makeText(MeasurementActivity.this, 
+                            "パース結果: loaded=" + isLoaded + ", center=" + (center != null) + ", polygons=" + polygonCount, 
+                            Toast.LENGTH_LONG).show();
+                    
+                    // レイヤーにデータがあるか確認
+                    if (isLoaded && center != null && polygonCount > 0) {
+                        String source = fromCache ? "キャッシュ" : "アセット";
+                        Toast.makeText(MeasurementActivity.this, 
+                                getString(layerType.getNameResId()) + " 読み込み完了 (" + polygonCount + "件)", 
+                                Toast.LENGTH_SHORT).show();
+                        
+                        // レイヤーの範囲にズームするか確認
+                        showZoomToLayerDialog(layerType);
+                    } else {
+                        // データが空の場合
+                        showNoLayerDataDialog(layerType);
+                        mapLayerManager.setLayerVisibility(layerType, false);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e("MeasurementActivity", "レイヤーデータ取得失敗: " + layerType.getId() + ", error=" + error);
+                runOnUiThread(() -> {
+                    Toast.makeText(MeasurementActivity.this, 
+                            "読み込みエラー: " + error, 
+                            Toast.LENGTH_LONG).show();
+                    // 読み込み失敗時は表示状態をOFFに戻す
+                    mapLayerManager.setLayerVisibility(layerType, false);
+                });
+            }
+
+            @Override
+            public void onProgress(int progress) {
+                // 進捗表示（必要に応じて実装）
+            }
+        });
     }
 
     /**
@@ -557,6 +705,36 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
             textGpsStatus.setTextColor(getColor(R.color.status_warning));
         }
     }
+    
+    /**
+     * サテライト数表示を更新
+     * 
+     * 形式: "使用中/捕捉中" (例: "8/12")
+     */
+    private void updateSatelliteDisplay() {
+        if (textSatelliteCount == null) return;
+        
+        if (satelliteCount > 0) {
+            // 使用中/捕捉中 の形式で表示
+            textSatelliteCount.setText(String.format(Locale.US, "%d/%d", 
+                    usedSatelliteCount, satelliteCount));
+            
+            // サテライト数に応じて色を変更
+            if (usedSatelliteCount >= 6) {
+                // 良好（6衛星以上で精度良好）
+                textSatelliteCount.setTextColor(getColor(R.color.status_safe));
+            } else if (usedSatelliteCount >= 4) {
+                // 測位可能（4衛星以上で3D測位）
+                textSatelliteCount.setTextColor(getColor(R.color.status_warning));
+            } else {
+                // 測位困難
+                textSatelliteCount.setTextColor(getColor(R.color.status_danger));
+            }
+        } else {
+            textSatelliteCount.setText("--");
+            textSatelliteCount.setTextColor(getColor(R.color.text_secondary));
+        }
+    }
 
     /**
      * 地図上の現在位置を更新
@@ -736,6 +914,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                 .build();
 
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+        
+        // GNSSステータス監視を開始
+        startGnssStatusUpdates();
     }
 
     /**
@@ -743,6 +924,46 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
      */
     private void stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback);
+        
+        // GNSSステータス監視を停止
+        stopGnssStatusUpdates();
+    }
+    
+    /**
+     * GNSSステータス監視を開始
+     */
+    private void startGnssStatusUpdates() {
+        if (locationManager == null || gnssStatusCallback == null) {
+            return;
+        }
+        
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        
+        try {
+            locationManager.registerGnssStatusCallback(gnssStatusCallback, new Handler(Looper.getMainLooper()));
+            Log.d("MeasurementActivity", "GNSSステータス監視開始");
+        } catch (Exception e) {
+            Log.e("MeasurementActivity", "GNSSステータス監視開始に失敗: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * GNSSステータス監視を停止
+     */
+    private void stopGnssStatusUpdates() {
+        if (locationManager == null || gnssStatusCallback == null) {
+            return;
+        }
+        
+        try {
+            locationManager.unregisterGnssStatusCallback(gnssStatusCallback);
+            Log.d("MeasurementActivity", "GNSSステータス監視停止");
+        } catch (Exception e) {
+            Log.e("MeasurementActivity", "GNSSステータス監視停止に失敗: " + e.getMessage());
+        }
     }
 
     @Override
@@ -790,6 +1011,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         } else if (id == R.id.action_map_type) {
             showMapTypeDialog();
             return true;
+        } else if (id == R.id.action_layers) {
+            showLayerSelectionDialog();
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -834,6 +1058,128 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                 break;
         }
         mapView.invalidate();
+    }
+
+    /**
+     * レイヤー選択ダイアログを表示
+     */
+    private void showLayerSelectionDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_layer_selection, null);
+
+        // スイッチを取得
+        SwitchMaterial switchDid = dialogView.findViewById(R.id.switch_layer_did);
+        SwitchMaterial switchAirport = dialogView.findViewById(R.id.switch_layer_airport);
+        SwitchMaterial switchNoFly = dialogView.findViewById(R.id.switch_layer_no_fly);
+        Spinner spinnerStyle = dialogView.findViewById(R.id.spinner_layer_style);
+
+        // 現在の状態を設定
+        switchDid.setChecked(mapLayerManager.isLayerVisible(LayerType.DID));
+        switchAirport.setChecked(mapLayerManager.isLayerVisible(LayerType.AIRPORT_RESTRICTION));
+        switchNoFly.setChecked(mapLayerManager.isLayerVisible(LayerType.NO_FLY_ZONE));
+
+        // スタイル選択スピナーを設定
+        String[] styleNames = {
+                getString(R.string.layer_style_filled),
+                getString(R.string.layer_style_border),
+                getString(R.string.layer_style_hatched)
+        };
+        ArrayAdapter<String> styleAdapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, styleNames);
+        styleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerStyle.setAdapter(styleAdapter);
+
+        // 現在のスタイルを選択
+        LayerDisplayStyle currentStyle = mapLayerManager.getDisplayStyle();
+        spinnerStyle.setSelection(currentStyle.ordinal());
+
+        // スタイル変更リスナー
+        spinnerStyle.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                LayerDisplayStyle newStyle = LayerDisplayStyle.values()[position];
+                if (newStyle != mapLayerManager.getDisplayStyle()) {
+                    mapLayerManager.setDisplayStyle(newStyle);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        // ダイアログを表示
+        new MaterialAlertDialogBuilder(this, R.style.SpyTech_Dialog)
+                .setTitle(R.string.layer_title)
+                .setView(dialogView)
+                .setPositiveButton(R.string.action_confirm, (dialog, which) -> {
+                    // レイヤー表示状態を更新
+                    updateLayerVisibility(LayerType.DID, switchDid.isChecked());
+                    updateLayerVisibility(LayerType.AIRPORT_RESTRICTION, switchAirport.isChecked());
+                    updateLayerVisibility(LayerType.NO_FLY_ZONE, switchNoFly.isChecked());
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
+    }
+
+    /**
+     * レイヤーの表示状態を更新
+     * 
+     * @param layerType レイヤータイプ
+     * @param visible 表示するかどうか
+     */
+    private void updateLayerVisibility(LayerType layerType, boolean visible) {
+        boolean currentlyVisible = mapLayerManager.isLayerVisible(layerType);
+        
+        if (visible && !currentlyVisible) {
+            // 表示ONにする場合、データがなければ読み込む
+            mapLayerManager.setLayerVisibility(layerType, true);
+            if (!mapLayerManager.isLayerLoaded(layerType)) {
+                loadLayerData(layerType);
+            }
+        } else if (!visible && currentlyVisible) {
+            // 表示OFFにする
+            mapLayerManager.setLayerVisibility(layerType, false);
+        }
+    }
+
+    /**
+     * レイヤーの範囲にズームするか確認するダイアログを表示
+     * 
+     * @param layerType レイヤータイプ
+     */
+    private void showZoomToLayerDialog(LayerType layerType) {
+        new MaterialAlertDialogBuilder(this, R.style.SpyTech_Dialog)
+                .setTitle(getString(layerType.getNameResId()))
+                .setMessage("レイヤーの表示位置に移動しますか？")
+                .setPositiveButton("移動", (dialog, which) -> {
+                    mapLayerManager.zoomToLayer(layerType);
+                })
+                .setNegativeButton("現在位置のまま", null)
+                .show();
+    }
+
+    /**
+     * レイヤーデータがない場合のダイアログを表示
+     * 
+     * @param layerType レイヤータイプ
+     */
+    private void showNoLayerDataDialog(LayerType layerType) {
+        String message = getString(layerType.getNameResId()) + "のデータがありません。\n\n" +
+                "正確なデータを表示するには、公式データをダウンロードしてアプリに組み込む必要があります。\n\n" +
+                "詳細は assets/layers/README.md を参照してください。";
+        
+        new MaterialAlertDialogBuilder(this, R.style.SpyTech_Dialog)
+                .setTitle(R.string.layer_no_data)
+                .setMessage(message)
+                .setPositiveButton(R.string.action_confirm, null)
+                .show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (layerDataRepository != null) {
+            layerDataRepository.shutdown();
+        }
     }
 }
 
