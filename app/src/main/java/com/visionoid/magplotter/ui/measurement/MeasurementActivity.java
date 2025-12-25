@@ -421,13 +421,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                     
                     // レイヤーにデータがあるか確認
                     if (isLoaded && center != null && polygonCount > 0) {
-                        String source = fromCache ? "キャッシュ" : "アセット";
                         Toast.makeText(MeasurementActivity.this, 
                                 getString(layerType.getNameResId()) + " 読み込み完了 (" + polygonCount + "件)", 
                                 Toast.LENGTH_SHORT).show();
-                        
-                        // レイヤーの範囲にズームするか確認
-                        showZoomToLayerDialog(layerType);
                     } else {
                         // データが空の場合
                         showNoLayerDataDialog(layerType);
