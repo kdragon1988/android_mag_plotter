@@ -31,5 +31,26 @@
         android:title="@string/action_screenshot"
         app:showAsAction="ifRoom" />
 
+    <item
+        android:id="@+id/action_drawing"
+        android:icon="@drawable/ic_drawing"
+        android:title="@string/action_drawing"
+        app:showAsAction="ifRoom">
+        <menu>
+            <item
+                android:id="@+id/action_draw_polygon"
+                android:title="@string/drawing_mode_polygon" />
+            <item
+                android:id="@+id/action_draw_polyline"
+                android:title="@string/drawing_mode_polyline" />
+            <item
+                android:id="@+id/action_draw_circle"
+                android:title="@string/drawing_mode_circle" />
+            <item
+                android:id="@+id/action_shape_list"
+                android:title="@string/action_drawing_list" />
+        </menu>
+    </item>
+
 </menu>
 

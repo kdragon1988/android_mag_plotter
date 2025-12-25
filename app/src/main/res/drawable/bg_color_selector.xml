@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    bg_color_selector.xml
+    
+    VISIONOID MAG PLOTTER - 色選択ボタン背景
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@android:color/white" />
+    <stroke
+        android:width="2dp"
+        android:color="#80FFFFFF" />
+</shape>
+

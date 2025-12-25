@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    dialog_shape_name.xml
+    
+    VISIONOID MAG PLOTTER - 図形名入力ダイアログ
+    
+    図形保存時に名称と色を設定するダイアログ。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/background_card"
+    android:orientation="vertical"
+    android:padding="@dimen/spacing_lg">
+
+    <!-- タイトル -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_md"
+        android:fontFamily="monospace"
+        android:text="@string/drawing_name_dialog_title"
+        android:textColor="@color/accent_cyan"
+        android:textSize="18sp" />
+
+    <!-- 図形情報 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_md"
+        android:background="@drawable/bg_overlay_panel"
+        android:orientation="horizontal"
+        android:padding="@dimen/spacing_sm">
+
+        <!-- 面積 -->
+        <LinearLayout
+            android:id="@+id/layout_dialog_area"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/drawing_area_label"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/text_dialog_area"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- 周囲長/距離 -->
+        <LinearLayout
+            android:id="@+id/layout_dialog_perimeter"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/text_dialog_perimeter_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/drawing_perimeter_label"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/text_dialog_perimeter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 名称入力 -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layout_shape_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_md"
+        android:hint="@string/drawing_name_hint"
+        app:boxBackgroundColor="@color/background_card"
+        app:boxStrokeColor="@color/accent_cyan"
+        app:hintTextColor="@color/text_secondary">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edit_shape_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:inputType="text"
+            android:maxLines="1"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- 色選択 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_sm"
+        android:text="COLOR"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <!-- オレンジ -->
+        <FrameLayout
+            android:id="@+id/color_orange"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="4dp"
+            android:background="@drawable/bg_color_selector"
+            android:backgroundTint="#FF5722">
+
+            <ImageView
+                android:id="@+id/check_orange"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/checkbox_on_background"
+                android:tint="@color/text_primary"
+                android:visibility="visible" />
+        </FrameLayout>
+
+        <!-- ブルー -->
+        <FrameLayout
+            android:id="@+id/color_blue"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="4dp"
+            android:background="@drawable/bg_color_selector"
+            android:backgroundTint="#2196F3">
+
+            <ImageView
+                android:id="@+id/check_blue"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/checkbox_on_background"
+                android:tint="@color/text_primary"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- グリーン -->
+        <FrameLayout
+            android:id="@+id/color_green"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="4dp"
+            android:background="@drawable/bg_color_selector"
+            android:backgroundTint="#4CAF50">
+
+            <ImageView
+                android:id="@+id/check_green"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/checkbox_on_background"
+                android:tint="@color/text_primary"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- レッド -->
+        <FrameLayout
+            android:id="@+id/color_red"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="4dp"
+            android:background="@drawable/bg_color_selector"
+            android:backgroundTint="#F44336">
+
+            <ImageView
+                android:id="@+id/check_red"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/checkbox_on_background"
+                android:tint="@color/text_primary"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- パープル -->
+        <FrameLayout
+            android:id="@+id/color_purple"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="4dp"
+            android:background="@drawable/bg_color_selector"
+            android:backgroundTint="#9C27B0">
+
+            <ImageView
+                android:id="@+id/check_purple"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/checkbox_on_background"
+                android:tint="@color/text_primary"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- イエロー -->
+        <FrameLayout
+            android:id="@+id/color_yellow"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="4dp"
+            android:background="@drawable/bg_color_selector"
+            android:backgroundTint="#FFC107">
+
+            <ImageView
+                android:id="@+id/check_yellow"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/checkbox_on_background"
+                android:tint="#333333"
+                android:visibility="gone" />
+        </FrameLayout>
+    </LinearLayout>
+</LinearLayout>
+

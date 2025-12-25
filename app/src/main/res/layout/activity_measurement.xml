@@ -344,6 +344,13 @@
                 android:textColor="@color/accent_cyan"
                 android:textSize="@dimen/text_size_sm" />
 
+            <!-- 作図ツールバーコンテナ -->
+            <FrameLayout
+                android:id="@+id/container_drawing_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom" />
+
         </FrameLayout>
 
         <!-- 下部: コントロールパネル -->

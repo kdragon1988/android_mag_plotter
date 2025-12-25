@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    item_shape.xml
+    
+    VISIONOID MAG PLOTTER - 図形リストアイテム
+    
+    図形リストの各アイテムのレイアウト。
+-->
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/spacing_sm"
+    app:cardBackgroundColor="@color/background_card"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/spacing_md">
+
+        <!-- 色インジケータ -->
+        <View
+            android:id="@+id/view_color_indicator"
+            android:layout_width="8dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="@dimen/spacing_md"
+            android:background="@drawable/bg_color_indicator" />
+
+        <!-- 図形情報 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- 名称 -->
+            <TextView
+                android:id="@+id/text_shape_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="monospace"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <!-- タイプと計測値 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:orientation="horizontal">
+
+                <!-- タイプアイコン -->
+                <TextView
+                    android:id="@+id/text_shape_type"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/spacing_sm"
+                    android:textAllCaps="true"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="10sp" />
+
+                <!-- 計測値 -->
+                <TextView
+                    android:id="@+id/text_shape_metrics"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/accent_cyan"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 表示/非表示トグル -->
+        <ImageButton
+            android:id="@+id/button_visibility"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Toggle visibility"
+            android:src="@android:drawable/ic_menu_view"
+            android:tint="@color/text_secondary" />
+
+        <!-- 編集ボタン -->
+        <ImageButton
+            android:id="@+id/button_edit"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Edit shape"
+            android:src="@android:drawable/ic_menu_edit"
+            android:tint="@color/text_secondary" />
+
+        <!-- 削除ボタン -->
+        <ImageButton
+            android:id="@+id/button_delete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Delete shape"
+            android:src="@android:drawable/ic_menu_delete"
+            android:tint="@color/status_danger" />
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+

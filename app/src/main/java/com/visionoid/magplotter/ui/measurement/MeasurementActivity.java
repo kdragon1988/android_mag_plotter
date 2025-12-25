@@ -93,8 +93,12 @@ import java.util.List;
 import java.util.Locale;
 
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
 import android.widget.Spinner;
 import android.widget.AdapterView;
+
+import com.visionoid.magplotter.ui.map.drawing.DrawingController;
+import com.visionoid.magplotter.ui.map.drawing.DrawingMode;
 
 /**
  * 計測画面アクティビティ
@@ -159,6 +163,10 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     // レイヤー関連
     private MapLayerManager mapLayerManager;
     private LayerDataRepository layerDataRepository;
+    
+    // 作図関連
+    private DrawingController drawingController;
+    private FrameLayout containerDrawingToolbar;
     
     /** Esri World Imagery（衛星写真）タイルソース */
     private static final OnlineTileSourceBase ESRI_WORLD_IMAGERY = new XYTileSource(
@@ -238,6 +246,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         initializeLocation();
         initializeMap();
         initializeMapLayers();
+        initializeDrawing();
         setupViewModel();
         setupListeners();
 
@@ -282,6 +291,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         
         // レベルゲージ
         noiseLevelGauge = findViewById(R.id.noise_level_gauge);
+        
+        // 作図ツールバーコンテナ
+        containerDrawingToolbar = findViewById(R.id.container_drawing_toolbar);
 
         // 初期値設定
         updateIntervalDisplay(measurementIntervalMs);
@@ -384,6 +396,39 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                 loadLayerData(layerType);
             }
         }
+    }
+
+    /**
+     * 作図機能を初期化
+     */
+    private void initializeDrawing() {
+        drawingController = new DrawingController(this, mapView, missionId);
+        drawingController.initializeToolbar(containerDrawingToolbar);
+        drawingController.observeShapes(this);
+        
+        // コールバック設定
+        drawingController.setCallback(new DrawingController.DrawingControllerCallback() {
+            @Override
+            public void onDrawingStarted(DrawingMode mode) {
+                // 作図中は計測ボタンを無効化
+                buttonMeasure.setEnabled(false);
+                buttonStartStop.setEnabled(false);
+            }
+
+            @Override
+            public void onDrawingCancelled() {
+                // 作図キャンセル時に計測ボタンを有効化
+                buttonMeasure.setEnabled(true);
+                buttonStartStop.setEnabled(true);
+            }
+
+            @Override
+            public void onShapeSaved(com.visionoid.magplotter.data.model.DrawingShape shape) {
+                // 作図完了時に計測ボタンを有効化
+                buttonMeasure.setEnabled(true);
+                buttonStartStop.setEnabled(true);
+            }
+        });
     }
 
     /**
@@ -1098,6 +1143,18 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         } else if (id == R.id.action_layers) {
             showLayerSelectionDialog();
             return true;
+        } else if (id == R.id.action_draw_polygon) {
+            drawingController.startPolygonDrawing();
+            return true;
+        } else if (id == R.id.action_draw_polyline) {
+            drawingController.startPolylineDrawing();
+            return true;
+        } else if (id == R.id.action_draw_circle) {
+            drawingController.startCircleDrawing();
+            return true;
+        } else if (id == R.id.action_shape_list) {
+            drawingController.showShapeListDialog();
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -1256,6 +1313,22 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                 .setMessage(message)
                 .setPositiveButton(R.string.action_confirm, null)
                 .show();
+    }
+
+    /**
+     * 戻るボタンの処理
+     * 
+     * 作図中の場合はキャンセルする。
+     */
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onBackPressed() {
+        // 作図中の場合はキャンセル
+        if (drawingController != null && drawingController.isDrawing()) {
+            drawingController.cancelDrawing();
+            return;
+        }
+        super.onBackPressed();
     }
 
     @Override

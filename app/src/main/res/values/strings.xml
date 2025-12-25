@@ -153,5 +153,46 @@
     <string name="settings_category_layer">LAYER SETTINGS</string>
     <string name="settings_layer_style">表示スタイル</string>
     <string name="settings_layer_default_visibility">デフォルト表示</string>
+    
+    <!-- 作図機能 -->
+    <string name="drawing_title">AREA DRAWING</string>
+    <string name="drawing_mode_polygon">ポリゴン</string>
+    <string name="drawing_mode_polyline">ライン</string>
+    <string name="drawing_mode_circle">サークル</string>
+    <string name="drawing_complete">完了</string>
+    <string name="drawing_cancel">キャンセル</string>
+    <string name="drawing_undo">取り消し</string>
+    <string name="drawing_clear">クリア</string>
+    <string name="drawing_edit">編集</string>
+    <string name="drawing_delete">削除</string>
+    <string name="drawing_save">保存</string>
+    <string name="drawing_hint_polygon">タップで頂点を追加</string>
+    <string name="drawing_hint_polyline">タップでポイントを追加</string>
+    <string name="drawing_hint_circle">中心をタップ後、ドラッグで半径設定</string>
+    <string name="drawing_name_dialog_title">図形名を入力</string>
+    <string name="drawing_name_hint">例: フライトエリア</string>
+    <string name="drawing_list_title">作図リスト</string>
+    <string name="drawing_no_shapes">作図がありません</string>
+    <string name="drawing_area_label">面積</string>
+    <string name="drawing_perimeter_label">周囲長</string>
+    <string name="drawing_distance_label">距離</string>
+    <string name="drawing_radius_label">半径</string>
+    <string name="drawing_delete_confirm">この図形を削除しますか？</string>
+    <string name="drawing_delete_message">「%s」を削除します。この操作は取り消せません。</string>
+    <string name="drawing_saved">図形を保存しました</string>
+    <string name="drawing_deleted">図形を削除しました</string>
+    <string name="drawing_min_points_polygon">3点以上が必要です</string>
+    <string name="drawing_min_points_polyline">2点以上が必要です</string>
+    <string name="drawing_set_radius">半径を設定してください</string>
+    <string name="action_drawing">作図</string>
+    <string name="action_drawing_list">図形リスト</string>
+    
+    <!-- 図形色 -->
+    <string name="color_orange">オレンジ</string>
+    <string name="color_blue">ブルー</string>
+    <string name="color_green">グリーン</string>
+    <string name="color_red">レッド</string>
+    <string name="color_purple">パープル</string>
+    <string name="color_yellow">イエロー</string>
 </resources>
 

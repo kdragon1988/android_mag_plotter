@@ -25,8 +25,10 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
+import com.visionoid.magplotter.data.dao.DrawingShapeDao;
 import com.visionoid.magplotter.data.dao.MeasurementPointDao;
 import com.visionoid.magplotter.data.dao.MissionDao;
+import com.visionoid.magplotter.data.model.DrawingShape;
 import com.visionoid.magplotter.data.model.MeasurementPoint;
 import com.visionoid.magplotter.data.model.Mission;
 
@@ -42,9 +44,10 @@ import java.util.concurrent.Executors;
 @Database(
     entities = {
         Mission.class,
-        MeasurementPoint.class
+        MeasurementPoint.class,
+        DrawingShape.class
     },
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -71,6 +74,12 @@ public abstract class AppDatabase extends RoomDatabase {
      * @return MeasurementPointDaoインスタンス
      */
     public abstract MeasurementPointDao measurementPointDao();
+
+    /**
+     * DrawingShapeDaoを取得
+     * @return DrawingShapeDaoインスタンス
+     */
+    public abstract DrawingShapeDao drawingShapeDao();
 
     /**
      * データベースインスタンスを取得
