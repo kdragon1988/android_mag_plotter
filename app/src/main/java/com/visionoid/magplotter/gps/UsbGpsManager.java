@@ -38,6 +38,7 @@ import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -71,6 +72,9 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
     /** NMEAパーサー */
     private final NmeaParser nmeaParser;
     
+    /** UBXパーサー */
+    private final UbxParser ubxParser;
+    
     /** メインスレッドハンドラー */
     private final Handler mainHandler;
 
@@ -92,8 +96,14 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
     /** 位置情報リスナー */
     private OnUsbGpsLocationListener locationListener;
     
+    /** 磁気センサーリスナー */
+    private OnUsbMagneticListener magneticListener;
+    
     /** 接続中フラグ */
     private boolean isConnected = false;
+    
+    /** 磁気センサー有効フラグ */
+    private boolean magneticSensorEnabled = false;
 
     /**
      * 接続状態リスナー
@@ -122,6 +132,20 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
          * @param location 位置情報
          */
         void onLocationUpdated(GpsLocation location);
+    }
+
+    /**
+     * 磁気センサーリスナー
+     */
+    public interface OnUsbMagneticListener {
+        /**
+         * 磁気センサーデータが更新された時に呼ばれる
+         * @param magX X軸磁場（μT）
+         * @param magY Y軸磁場（μT）
+         * @param magZ Z軸磁場（μT）
+         * @param totalField 総磁場強度（μT）
+         */
+        void onMagneticData(float magX, float magY, float magZ, float totalField);
     }
 
     /**
@@ -164,6 +188,7 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
         this.context = context.getApplicationContext();
         this.usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         this.nmeaParser = new NmeaParser();
+        this.ubxParser = new UbxParser();
         this.mainHandler = new Handler(Looper.getMainLooper());
 
         // NMEAパーサーのリスナーを設定
@@ -171,6 +196,15 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
             mainHandler.post(() -> {
                 if (locationListener != null) {
                     locationListener.onLocationUpdated(location);
+                }
+            });
+        });
+
+        // UBXパーサーの磁気データリスナーを設定
+        ubxParser.setOnMagneticDataListener((magX, magY, magZ, totalField) -> {
+            mainHandler.post(() -> {
+                if (magneticListener != null) {
+                    magneticListener.onMagneticData(magX, magY, magZ, totalField);
                 }
             });
         });
@@ -211,12 +245,65 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
     }
 
     /**
+     * 磁気センサーリスナーを設定
+     * @param listener リスナー
+     */
+    public void setOnUsbMagneticListener(OnUsbMagneticListener listener) {
+        this.magneticListener = listener;
+    }
+
+    /**
+     * 磁気センサーを有効化
+     * 接続後に呼び出すことで、ESF-RAW/ESF-MEASメッセージを有効化する
+     */
+    public void enableMagneticSensor() {
+        if (!isConnected || serialPort == null) {
+            Log.w(TAG, "磁気センサー有効化失敗: 未接続");
+            return;
+        }
+
+        try {
+            // ESF-RAWメッセージを有効化
+            byte[] enableEsfRaw = UbxParser.buildEnableEsfRawCommand();
+            serialPort.write(enableEsfRaw, 1000);
+            Log.d(TAG, "ESF-RAWメッセージ有効化コマンド送信");
+
+            // ESF-MEASメッセージを有効化
+            byte[] enableEsfMeas = UbxParser.buildEnableEsfMeasCommand();
+            serialPort.write(enableEsfMeas, 1000);
+            Log.d(TAG, "ESF-MEASメッセージ有効化コマンド送信");
+
+            magneticSensorEnabled = true;
+        } catch (IOException e) {
+            Log.e(TAG, "磁気センサー有効化コマンド送信エラー: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 磁気センサーが有効かどうかを取得
+     * @return 有効な場合true
+     */
+    public boolean isMagneticSensorEnabled() {
+        return magneticSensorEnabled;
+    }
+
+    /**
      * 利用可能なUSB GPSデバイスを検索
      * 
      * @return 見つかったデバイスのリスト
      */
     public List<UsbSerialDriver> findAvailableDevices() {
-        return UsbSerialProber.getDefaultProber().findAllDrivers(usbManager);
+        try {
+            if (usbManager == null) {
+                Log.w(TAG, "UsbManagerがnullです");
+                return new ArrayList<>();
+            }
+            List<UsbSerialDriver> drivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager);
+            return drivers != null ? drivers : new ArrayList<>();
+        } catch (Exception e) {
+            Log.e(TAG, "USBデバイス検索エラー: " + e.getMessage());
+            return new ArrayList<>();
+        }
     }
 
     /**
@@ -225,7 +312,12 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
      * @return デバイスが存在する場合true
      */
     public boolean hasUsbGpsDevice() {
-        return !findAvailableDevices().isEmpty();
+        try {
+            return !findAvailableDevices().isEmpty();
+        } catch (Exception e) {
+            Log.e(TAG, "USBデバイス確認エラー: " + e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -234,28 +326,47 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
      * @return 接続処理を開始した場合true
      */
     public boolean connect() {
-        List<UsbSerialDriver> drivers = findAvailableDevices();
-        if (drivers.isEmpty()) {
-            Log.w(TAG, "USB GPSデバイスが見つかりません");
-            notifyError("USB GPSデバイスが見つかりません");
+        try {
+            List<UsbSerialDriver> drivers = findAvailableDevices();
+            if (drivers.isEmpty()) {
+                Log.w(TAG, "USB GPSデバイスが見つかりません");
+                notifyError("USB GPSデバイスが見つかりません");
+                return false;
+            }
+
+            UsbSerialDriver driver = drivers.get(0);
+            UsbDevice device = driver.getDevice();
+            
+            if (usbManager == null) {
+                Log.e(TAG, "UsbManagerがnullです");
+                notifyError("USBマネージャーの初期化に失敗しました");
+                return false;
+            }
+
+            // 接続許可をリクエスト
+            if (!usbManager.hasPermission(device)) {
+                Log.d(TAG, "USB許可をリクエスト中: " + device.getDeviceName());
+                Intent intent = new Intent(ACTION_USB_PERMISSION);
+                intent.setPackage(context.getPackageName());
+                int flags;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    flags = PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
+                } else {
+                    flags = PendingIntent.FLAG_UPDATE_CURRENT;
+                }
+                PendingIntent permissionIntent = PendingIntent.getBroadcast(
+                        context, 0, intent, flags);
+                usbManager.requestPermission(device, permissionIntent);
+                return true;
+            }
+
+            // すでに許可がある場合は直接接続
+            return connectToDevice(device);
+        } catch (Exception e) {
+            Log.e(TAG, "USB GPS接続開始エラー: " + e.getMessage(), e);
+            notifyError("USB GPS接続エラー: " + e.getMessage());
             return false;
         }
-
-        UsbSerialDriver driver = drivers.get(0);
-        UsbDevice device = driver.getDevice();
-
-        // 接続許可をリクエスト
-        if (!usbManager.hasPermission(device)) {
-            Log.d(TAG, "USB許可をリクエスト中: " + device.getDeviceName());
-            int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;
-            PendingIntent permissionIntent = PendingIntent.getBroadcast(
-                    context, 0, new Intent(ACTION_USB_PERMISSION), flags);
-            usbManager.requestPermission(device, permissionIntent);
-            return true;
-        }
-
-        // すでに許可がある場合は直接接続
-        return connectToDevice(device);
     }
 
     /**
@@ -382,7 +493,12 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
 
     @Override
     public void onNewData(byte[] data) {
-        // 受信データをバッファに追加
+        // UBXバイナリデータをパース（磁気センサーデータ取得用）
+        if (magneticSensorEnabled) {
+            ubxParser.parse(data);
+        }
+
+        // 受信データをバッファに追加（NMEAテキスト用）
         String received = new String(data);
         receiveBuffer.append(received);
 

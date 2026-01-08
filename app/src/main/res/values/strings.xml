@@ -220,5 +220,14 @@
     <string name="gps_accuracy_cm">cm精度</string>
     <string name="gps_accuracy_m">m精度</string>
     <string name="action_gps_settings">GPS設定</string>
+    
+    <!-- 磁気センサーソース -->
+    <string name="mag_source">MAG SOURCE</string>
+    <string name="mag_source_internal">内蔵センサー</string>
+    <string name="mag_source_usb">USB GPS (IST8310)</string>
+    <string name="mag_usb_enabled">USB磁気センサー有効化</string>
+    <string name="mag_usb_disabled">USB磁気センサー無効</string>
+    <string name="mag_usb_not_connected">USB GPSが接続されていません</string>
+    <string name="action_mag_settings">磁気センサー設定</string>
 </resources>
 

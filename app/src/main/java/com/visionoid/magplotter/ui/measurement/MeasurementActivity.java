@@ -178,6 +178,12 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private GpsLocation currentUsbGpsLocation;
     private boolean isUsbGpsConnected = false;
     
+    /** 磁気センサーソース（true: USB GPS, false: 内蔵） */
+    private boolean useUsbMagneticSensor = false;
+    
+    /** USB GPS磁気データ */
+    private float usbMagX = 0, usbMagY = 0, usbMagZ = 0, usbMagTotal = 0;
+    
     /** Esri World Imagery（衛星写真）タイルソース */
     private static final OnlineTileSourceBase ESRI_WORLD_IMAGERY = new XYTileSource(
             "EsriWorldImagery",
@@ -443,10 +449,60 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
             });
         });
         
+        // 磁気センサーリスナー
+        usbGpsManager.setOnUsbMagneticListener((magX, magY, magZ, totalField) -> {
+            usbMagX = magX;
+            usbMagY = magY;
+            usbMagZ = magZ;
+            usbMagTotal = totalField;
+            
+            runOnUiThread(() -> {
+                // USB GPS磁気センサーを使用中の場合、UIを更新
+                if (useUsbMagneticSensor) {
+                    updateMagneticDisplay(totalField, calculateNoise(magX, magY, magZ));
+                }
+            });
+        });
+        
         // 自動モードの場合、USB GPSデバイスの検出を試みる
         if (currentGpsSource == GpsSourceType.AUTO && usbGpsManager.hasUsbGpsDevice()) {
             Log.d("MeasurementActivity", "USB GPSデバイスを検出しました。接続を試みます。");
             usbGpsManager.connect();
+        }
+    }
+    
+    /**
+     * ノイズを計算（簡易的な標準偏差）
+     */
+    private double calculateNoise(float x, float y, float z) {
+        // 磁場成分から簡易的なノイズ推定
+        double mean = (x + y + z) / 3.0;
+        double variance = (Math.pow(x - mean, 2) + Math.pow(y - mean, 2) + Math.pow(z - mean, 2)) / 3.0;
+        return Math.sqrt(variance);
+    }
+    
+    /**
+     * 磁場表示を更新
+     */
+    private void updateMagneticDisplay(double magStrength, double noise) {
+        if (textMagValue != null) {
+            textMagValue.setText(String.format(Locale.getDefault(), "%.1f", magStrength));
+        }
+        if (textNoiseValue != null) {
+            textNoiseValue.setText(String.format(Locale.getDefault(), "%.1f", noise));
+            // ノイズレベルに応じた色
+            int color;
+            if (noise < 10) {
+                color = ContextCompat.getColor(this, R.color.status_safe);
+            } else if (noise < 30) {
+                color = ContextCompat.getColor(this, R.color.status_warning);
+            } else {
+                color = ContextCompat.getColor(this, R.color.status_danger);
+            }
+            textNoiseValue.setTextColor(color);
+        }
+        if (noiseLevelGauge != null) {
+            noiseLevelGauge.setNoiseValue(noise);
         }
     }
 
@@ -1349,6 +1405,12 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         } else if (id == R.id.action_gps_source_usb) {
             setGpsSource(GpsSourceType.USB);
             return true;
+        } else if (id == R.id.action_mag_source_internal) {
+            setMagneticSource(false);
+            return true;
+        } else if (id == R.id.action_mag_source_usb) {
+            setMagneticSource(true);
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -1358,49 +1420,97 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
      * @param sourceType GPSソース種別
      */
     private void setGpsSource(GpsSourceType sourceType) {
-        currentGpsSource = sourceType;
-        Log.d("MeasurementActivity", "GPSソースを変更: " + sourceType.getDisplayName());
-        
-        switch (sourceType) {
-            case AUTO:
-                // 自動モード：USB GPSがあれば使用、なければ内蔵GPS
-                if (usbGpsManager != null && usbGpsManager.hasUsbGpsDevice()) {
-                    if (!isUsbGpsConnected) {
-                        usbGpsManager.connect();
-                    }
-                }
-                Toast.makeText(this, R.string.gps_source_auto, Toast.LENGTH_SHORT).show();
-                break;
-                
-            case INTERNAL:
-                // 内蔵GPSのみ使用
-                if (usbGpsManager != null && isUsbGpsConnected) {
-                    usbGpsManager.disconnect();
-                }
-                if (panelRtkInfo != null) {
-                    panelRtkInfo.setVisibility(View.GONE);
-                }
-                Toast.makeText(this, R.string.gps_source_internal, Toast.LENGTH_SHORT).show();
-                break;
-                
-            case USB:
-                // USB GPSのみ使用
-                if (usbGpsManager != null) {
-                    if (usbGpsManager.hasUsbGpsDevice()) {
-                        if (!isUsbGpsConnected) {
-                            usbGpsManager.connect();
+        try {
+            currentGpsSource = sourceType;
+            Log.d("MeasurementActivity", "GPSソースを変更: " + sourceType.getDisplayName());
+            
+            switch (sourceType) {
+                case AUTO:
+                    // 自動モード：USB GPSがあれば使用、なければ内蔵GPS
+                    if (usbGpsManager != null) {
+                        try {
+                            if (usbGpsManager.hasUsbGpsDevice() && !isUsbGpsConnected) {
+                                usbGpsManager.connect();
+                            }
+                        } catch (Exception e) {
+                            Log.e("MeasurementActivity", "USB GPS接続エラー: " + e.getMessage());
                         }
-                        if (panelRtkInfo != null) {
-                            panelRtkInfo.setVisibility(View.VISIBLE);
+                    }
+                    Toast.makeText(this, R.string.gps_source_auto, Toast.LENGTH_SHORT).show();
+                    break;
+                    
+                case INTERNAL:
+                    // 内蔵GPSのみ使用
+                    if (usbGpsManager != null && isUsbGpsConnected) {
+                        try {
+                            usbGpsManager.disconnect();
+                        } catch (Exception e) {
+                            Log.e("MeasurementActivity", "USB GPS切断エラー: " + e.getMessage());
+                        }
+                    }
+                    if (panelRtkInfo != null) {
+                        panelRtkInfo.setVisibility(View.GONE);
+                    }
+                    Toast.makeText(this, R.string.gps_source_internal, Toast.LENGTH_SHORT).show();
+                    break;
+                    
+                case USB:
+                    // USB GPSのみ使用
+                    if (usbGpsManager != null) {
+                        try {
+                            if (usbGpsManager.hasUsbGpsDevice()) {
+                                if (!isUsbGpsConnected) {
+                                    usbGpsManager.connect();
+                                }
+                                if (panelRtkInfo != null) {
+                                    panelRtkInfo.setVisibility(View.VISIBLE);
+                                }
+                            } else {
+                                Toast.makeText(this, R.string.gps_usb_not_found, Toast.LENGTH_LONG).show();
+                            }
+                        } catch (Exception e) {
+                            Log.e("MeasurementActivity", "USB GPS接続エラー: " + e.getMessage());
+                            Toast.makeText(this, "USB GPS接続エラー: " + e.getMessage(), Toast.LENGTH_LONG).show();
                         }
                     } else {
                         Toast.makeText(this, R.string.gps_usb_not_found, Toast.LENGTH_LONG).show();
                     }
-                }
-                break;
+                    break;
+            }
+            
+            updateGpsSourceDisplay();
+        } catch (Exception e) {
+            Log.e("MeasurementActivity", "GPSソース設定エラー: " + e.getMessage(), e);
+            Toast.makeText(this, "GPSソース設定エラー", Toast.LENGTH_SHORT).show();
         }
-        
-        updateGpsSourceDisplay();
+    }
+
+    /**
+     * 磁気センサーソースを設定
+     * @param useUsb USB GPS磁気センサーを使用する場合true
+     */
+    private void setMagneticSource(boolean useUsb) {
+        try {
+            if (useUsb) {
+                // USB GPS磁気センサーを使用
+                if (usbGpsManager != null && isUsbGpsConnected) {
+                    useUsbMagneticSensor = true;
+                    usbGpsManager.enableMagneticSensor();
+                    Toast.makeText(this, R.string.mag_usb_enabled, Toast.LENGTH_SHORT).show();
+                    Log.d("MeasurementActivity", "磁気センサーソース: USB GPS (IST8310)");
+                } else {
+                    Toast.makeText(this, R.string.mag_usb_not_connected, Toast.LENGTH_LONG).show();
+                }
+            } else {
+                // 内蔵センサーを使用
+                useUsbMagneticSensor = false;
+                Toast.makeText(this, R.string.mag_source_internal, Toast.LENGTH_SHORT).show();
+                Log.d("MeasurementActivity", "磁気センサーソース: 内蔵センサー");
+            }
+        } catch (Exception e) {
+            Log.e("MeasurementActivity", "磁気センサーソース設定エラー: " + e.getMessage(), e);
+            Toast.makeText(this, "磁気センサー設定エラー", Toast.LENGTH_SHORT).show();
+        }
     }
     
     /**

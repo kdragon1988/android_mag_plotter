@@ -70,5 +70,20 @@
         </menu>
     </item>
 
+    <item
+        android:id="@+id/action_mag_settings"
+        android:icon="@drawable/ic_sensor"
+        android:title="@string/action_mag_settings"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/action_mag_source_internal"
+                android:title="@string/mag_source_internal" />
+            <item
+                android:id="@+id/action_mag_source_usb"
+                android:title="@string/mag_source_usb" />
+        </menu>
+    </item>
+
 </menu>
 
