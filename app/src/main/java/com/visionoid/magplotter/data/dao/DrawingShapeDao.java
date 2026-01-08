@@ -200,3 +200,4 @@ public interface DrawingShapeDao {
     List<DrawingShape> getByMissionIdAndType(long missionId, String shapeType);
 }
 
+

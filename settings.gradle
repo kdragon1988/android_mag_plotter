@@ -27,3 +27,4 @@ rootProject.name = "VisionoidMagPlotter"
 include ':app'
 
 
+

@@ -52,5 +52,23 @@
         </menu>
     </item>
 
+    <item
+        android:id="@+id/action_gps_settings"
+        android:icon="@drawable/ic_gps"
+        android:title="@string/action_gps_settings"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/action_gps_source_auto"
+                android:title="@string/gps_source_auto" />
+            <item
+                android:id="@+id/action_gps_source_internal"
+                android:title="@string/gps_source_internal" />
+            <item
+                android:id="@+id/action_gps_source_usb"
+                android:title="@string/gps_source_usb" />
+        </menu>
+    </item>
+
 </menu>
 

@@ -99,6 +99,10 @@ import android.widget.AdapterView;
 
 import com.visionoid.magplotter.ui.map.drawing.DrawingController;
 import com.visionoid.magplotter.ui.map.drawing.DrawingMode;
+import com.visionoid.magplotter.gps.GpsFixStatus;
+import com.visionoid.magplotter.gps.GpsLocation;
+import com.visionoid.magplotter.gps.GpsSourceType;
+import com.visionoid.magplotter.gps.UsbGpsManager;
 
 /**
  * 計測画面アクティビティ
@@ -168,6 +172,12 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private DrawingController drawingController;
     private FrameLayout containerDrawingToolbar;
     
+    // USB GPS関連
+    private UsbGpsManager usbGpsManager;
+    private GpsSourceType currentGpsSource = GpsSourceType.AUTO;
+    private GpsLocation currentUsbGpsLocation;
+    private boolean isUsbGpsConnected = false;
+    
     /** Esri World Imagery（衛星写真）タイルソース */
     private static final OnlineTileSourceBase ESRI_WORLD_IMAGERY = new XYTileSource(
             "EsriWorldImagery",
@@ -222,6 +232,12 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     
     // レベルゲージ
     private NoiseLevelGauge noiseLevelGauge;
+    
+    // RTK GPS UI要素
+    private View panelRtkInfo;
+    private TextView textGpsFixStatus;
+    private TextView textGpsHdop;
+    private TextView textGpsSource;
 
     /** 日付フォーマット（スクリーンショット用） */
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
@@ -244,6 +260,7 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         initializeViews();
         initializeSensors();
         initializeLocation();
+        initializeUsbGps();  // USB GPS初期化
         initializeMap();
         initializeMapLayers();
         initializeDrawing();
@@ -294,6 +311,12 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         
         // 作図ツールバーコンテナ
         containerDrawingToolbar = findViewById(R.id.container_drawing_toolbar);
+        
+        // RTK GPS UI要素
+        panelRtkInfo = findViewById(R.id.panel_rtk_info);
+        textGpsFixStatus = findViewById(R.id.text_gps_fix_status);
+        textGpsHdop = findViewById(R.id.text_gps_hdop);
+        textGpsSource = findViewById(R.id.text_gps_source);
 
         // 初期値設定
         updateIntervalDisplay(measurementIntervalMs);
@@ -365,6 +388,168 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                 Log.d("MeasurementActivity", "GNSS stopped");
             }
         };
+    }
+
+    /**
+     * USB GPS（RTK GPS）を初期化
+     */
+    private void initializeUsbGps() {
+        usbGpsManager = new UsbGpsManager(this);
+        
+        // 接続状態リスナー
+        usbGpsManager.setOnConnectionStateListener(new UsbGpsManager.OnConnectionStateListener() {
+            @Override
+            public void onConnectionStateChanged(boolean connected, String deviceName) {
+                isUsbGpsConnected = connected;
+                runOnUiThread(() -> {
+                    if (connected) {
+                        Toast.makeText(MeasurementActivity.this, 
+                                getString(R.string.gps_usb_connected) + ": " + deviceName, 
+                                Toast.LENGTH_SHORT).show();
+                        // RTK情報パネルを表示
+                        if (panelRtkInfo != null) {
+                            panelRtkInfo.setVisibility(View.VISIBLE);
+                        }
+                        updateGpsSourceDisplay();
+                    } else {
+                        Toast.makeText(MeasurementActivity.this, 
+                                R.string.gps_usb_disconnected, 
+                                Toast.LENGTH_SHORT).show();
+                        // 自動モードで内蔵GPSに戻る場合のみパネルを非表示
+                        if (currentGpsSource == GpsSourceType.AUTO && panelRtkInfo != null) {
+                            panelRtkInfo.setVisibility(View.GONE);
+                        }
+                        updateGpsSourceDisplay();
+                    }
+                });
+            }
+            
+            @Override
+            public void onError(String message) {
+                runOnUiThread(() -> {
+                    Toast.makeText(MeasurementActivity.this, message, Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+        
+        // 位置情報リスナー
+        usbGpsManager.setOnUsbGpsLocationListener(location -> {
+            currentUsbGpsLocation = location;
+            runOnUiThread(() -> {
+                // USB GPSからの位置情報を処理
+                if (shouldUseUsbGps()) {
+                    updateLocationFromUsbGps(location);
+                }
+            });
+        });
+        
+        // 自動モードの場合、USB GPSデバイスの検出を試みる
+        if (currentGpsSource == GpsSourceType.AUTO && usbGpsManager.hasUsbGpsDevice()) {
+            Log.d("MeasurementActivity", "USB GPSデバイスを検出しました。接続を試みます。");
+            usbGpsManager.connect();
+        }
+    }
+
+    /**
+     * USB GPSを使用するべきかどうかを判定
+     * @return USB GPSを使用する場合true
+     */
+    private boolean shouldUseUsbGps() {
+        if (currentGpsSource == GpsSourceType.USB) {
+            return true;
+        }
+        if (currentGpsSource == GpsSourceType.AUTO && isUsbGpsConnected) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * USB GPSからの位置情報でUIを更新
+     * @param location USB GPS位置情報
+     */
+    private void updateLocationFromUsbGps(GpsLocation location) {
+        if (location == null || !location.isValid()) {
+            return;
+        }
+        
+        // 現在位置を更新（内蔵GPSと同様に処理）
+        currentLocation = location.toAndroidLocation();
+        currentAccuracy = location.getHorizontalAccuracy();
+        
+        // 位置情報UIを更新
+        updateLocationUI();
+        updateMapLocation();
+        
+        // RTK GPS固有の情報を更新
+        updateRtkInfoDisplay(location);
+    }
+
+    /**
+     * RTK GPS情報パネルを更新
+     * @param location GPS位置情報
+     */
+    private void updateRtkInfoDisplay(GpsLocation location) {
+        if (panelRtkInfo == null || location == null) {
+            return;
+        }
+        
+        // Fix状態
+        if (textGpsFixStatus != null) {
+            GpsFixStatus fixStatus = location.getFixStatus();
+            textGpsFixStatus.setText(fixStatus.getEnglishLabel());
+            
+            // Fix状態に応じて色を変更
+            int color;
+            switch (fixStatus) {
+                case RTK_FIX:
+                    color = ContextCompat.getColor(this, R.color.status_safe);
+                    break;
+                case RTK_FLOAT:
+                    color = ContextCompat.getColor(this, R.color.status_warning);
+                    break;
+                case FIX_3D:
+                case DGPS:
+                    color = ContextCompat.getColor(this, R.color.accent_cyan);
+                    break;
+                default:
+                    color = ContextCompat.getColor(this, R.color.status_danger);
+                    break;
+            }
+            textGpsFixStatus.setTextColor(color);
+        }
+        
+        // HDOP
+        if (textGpsHdop != null) {
+            float hdop = location.getHdop();
+            textGpsHdop.setText(String.format(Locale.getDefault(), "%.1f", hdop));
+        }
+        
+        // ソース
+        updateGpsSourceDisplay();
+    }
+
+    /**
+     * GPSソース表示を更新
+     */
+    private void updateGpsSourceDisplay() {
+        if (textGpsSource == null) {
+            return;
+        }
+        
+        String sourceText;
+        int sourceColor;
+        
+        if (shouldUseUsbGps() && isUsbGpsConnected) {
+            sourceText = "USB";
+            sourceColor = ContextCompat.getColor(this, R.color.accent_orange);
+        } else {
+            sourceText = "INT";
+            sourceColor = ContextCompat.getColor(this, R.color.accent_cyan);
+        }
+        
+        textGpsSource.setText(sourceText);
+        textGpsSource.setTextColor(sourceColor);
     }
 
     /**
@@ -1155,8 +1340,67 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         } else if (id == R.id.action_shape_list) {
             drawingController.showShapeListDialog();
             return true;
+        } else if (id == R.id.action_gps_source_auto) {
+            setGpsSource(GpsSourceType.AUTO);
+            return true;
+        } else if (id == R.id.action_gps_source_internal) {
+            setGpsSource(GpsSourceType.INTERNAL);
+            return true;
+        } else if (id == R.id.action_gps_source_usb) {
+            setGpsSource(GpsSourceType.USB);
+            return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * GPSソースを設定
+     * @param sourceType GPSソース種別
+     */
+    private void setGpsSource(GpsSourceType sourceType) {
+        currentGpsSource = sourceType;
+        Log.d("MeasurementActivity", "GPSソースを変更: " + sourceType.getDisplayName());
+        
+        switch (sourceType) {
+            case AUTO:
+                // 自動モード：USB GPSがあれば使用、なければ内蔵GPS
+                if (usbGpsManager != null && usbGpsManager.hasUsbGpsDevice()) {
+                    if (!isUsbGpsConnected) {
+                        usbGpsManager.connect();
+                    }
+                }
+                Toast.makeText(this, R.string.gps_source_auto, Toast.LENGTH_SHORT).show();
+                break;
+                
+            case INTERNAL:
+                // 内蔵GPSのみ使用
+                if (usbGpsManager != null && isUsbGpsConnected) {
+                    usbGpsManager.disconnect();
+                }
+                if (panelRtkInfo != null) {
+                    panelRtkInfo.setVisibility(View.GONE);
+                }
+                Toast.makeText(this, R.string.gps_source_internal, Toast.LENGTH_SHORT).show();
+                break;
+                
+            case USB:
+                // USB GPSのみ使用
+                if (usbGpsManager != null) {
+                    if (usbGpsManager.hasUsbGpsDevice()) {
+                        if (!isUsbGpsConnected) {
+                            usbGpsManager.connect();
+                        }
+                        if (panelRtkInfo != null) {
+                            panelRtkInfo.setVisibility(View.VISIBLE);
+                        }
+                    } else {
+                        Toast.makeText(this, R.string.gps_usb_not_found, Toast.LENGTH_LONG).show();
+                    }
+                }
+                break;
+        }
+        
+        updateGpsSourceDisplay();
     }
     
     /**
@@ -1336,6 +1580,11 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         super.onDestroy();
         if (layerDataRepository != null) {
             layerDataRepository.shutdown();
+        }
+        // USB GPSリソースを解放
+        if (usbGpsManager != null) {
+            usbGpsManager.release();
+            usbGpsManager = null;
         }
     }
 }

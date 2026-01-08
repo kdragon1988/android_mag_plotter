@@ -194,5 +194,31 @@
     <string name="color_red">レッド</string>
     <string name="color_purple">パープル</string>
     <string name="color_yellow">イエロー</string>
+    
+    <!-- RTK GPS関連 -->
+    <string name="gps_source">GPS SOURCE</string>
+    <string name="gps_source_internal">内蔵GPS</string>
+    <string name="gps_source_usb">USB RTK GPS</string>
+    <string name="gps_source_auto">自動検出</string>
+    <string name="gps_fix_no_fix">NO FIX</string>
+    <string name="gps_fix_2d">2D FIX</string>
+    <string name="gps_fix_3d">3D FIX</string>
+    <string name="gps_fix_dgps">DGPS</string>
+    <string name="gps_fix_rtk_float">RTK FLOAT</string>
+    <string name="gps_fix_rtk_fix">RTK FIX</string>
+    <string name="gps_label_hdop">HDOP</string>
+    <string name="gps_label_satellites">SAT</string>
+    <string name="gps_label_fix">FIX</string>
+    <string name="gps_label_source">SRC</string>
+    <string name="gps_usb_connected">USB GPS 接続完了</string>
+    <string name="gps_usb_disconnected">USB GPS 切断</string>
+    <string name="gps_usb_not_found">USB GPSデバイスが見つかりません</string>
+    <string name="gps_usb_permission_denied">USB許可が拒否されました</string>
+    <string name="gps_usb_connect">USB GPS 接続</string>
+    <string name="gps_usb_disconnect">USB GPS 切断</string>
+    <string name="gps_select_source_title">GPSソース選択</string>
+    <string name="gps_accuracy_cm">cm精度</string>
+    <string name="gps_accuracy_m">m精度</string>
+    <string name="action_gps_settings">GPS設定</string>
 </resources>
 

@@ -28,6 +28,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
+    <!-- USB (RTK GPS対応) -->
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+
     <!-- ハードウェア機能 -->
     <uses-feature android:name="android.hardware.sensor.compass" android:required="true" />
     <uses-feature android:name="android.hardware.location.gps" android:required="true" />
@@ -97,5 +100,6 @@
     </application>
 
 </manifest>
+
 
 

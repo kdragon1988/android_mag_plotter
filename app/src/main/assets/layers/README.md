@@ -165,3 +165,4 @@ gdf.to_file("did_japan.geojson", driver="GeoJSON")
 ### 飛行申請・許可
 - DIPS（ドローン情報基盤システム）: https://www.ossportal.dips.mlit.go.jp/
 
+
