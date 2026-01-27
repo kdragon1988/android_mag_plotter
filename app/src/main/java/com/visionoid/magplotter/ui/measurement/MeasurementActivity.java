@@ -181,8 +181,20 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     /** 磁気センサーソース（true: USB GPS, false: 内蔵） */
     private boolean useUsbMagneticSensor = false;
     
-    /** USB GPS磁気データ */
-    private float usbMagX = 0, usbMagY = 0, usbMagZ = 0, usbMagTotal = 0;
+    /** PIMAGデータ受信フラグ（デバッグ用） */
+    private boolean pimagDataReceived = false;
+    
+    /** USB磁気センサーUI更新間隔（ミリ秒） */
+    private static final long MAG_UI_UPDATE_INTERVAL = 50; // 20Hz
+    
+    /** USB GPS磁気データ（volatileで同期） */
+    private volatile float usbMagX = 0, usbMagY = 0, usbMagZ = 0, usbMagTotal = 0;
+    
+    /** USB磁気UI更新用Handler */
+    private android.os.Handler usbMagUiHandler;
+    
+    /** USB磁気UI更新Runnable */
+    private Runnable usbMagUiRunnable;
     
     /** Esri World Imagery（衛星写真）タイルソース */
     private static final OnlineTileSourceBase ESRI_WORLD_IMAGERY = new XYTileSource(
@@ -402,6 +414,33 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private void initializeUsbGps() {
         usbGpsManager = new UsbGpsManager(this);
         
+        // USB磁気センサーUI更新用タイマーを初期化
+        usbMagUiHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        usbMagUiRunnable = new Runnable() {
+            private int runCount = 0;
+            @Override
+            public void run() {
+                runCount++;
+                // デバッグ: 最初の5回のみログ出力
+                if (runCount <= 5) {
+                    Log.d("MeasurementActivity", "UIタイマー[" + runCount + "]: useUsb=" + useUsbMagneticSensor + 
+                            ", received=" + pimagDataReceived + ", total=" + usbMagTotal);
+                }
+                // USB磁気センサー使用中かつデータを受信済みの場合のみ更新
+                if (useUsbMagneticSensor && pimagDataReceived) {
+                    double total = usbMagTotal;
+                    // ノイズ = 基準磁場からの偏差
+                    double noise = 0;
+                    if (currentMission != null) {
+                        noise = Math.abs(total - currentMission.getReferenceMag());
+                    }
+                    updateMagneticDisplay(total, noise);
+                }
+                // 次の更新をスケジュール
+                usbMagUiHandler.postDelayed(this, MAG_UI_UPDATE_INTERVAL);
+            }
+        };
+        
         // 接続状態リスナー
         usbGpsManager.setOnConnectionStateListener(new UsbGpsManager.OnConnectionStateListener() {
             @Override
@@ -417,6 +456,15 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                             panelRtkInfo.setVisibility(View.VISIBLE);
                         }
                         updateGpsSourceDisplay();
+                        
+                        // Pico経由の場合、自動的に磁気センサーソースをUSBに切り替え
+                        if (usbGpsManager != null && usbGpsManager.isPicoConnected()) {
+                            useUsbMagneticSensor = true;
+                            Log.d("MeasurementActivity", "Pico検出: 磁気センサーを自動的にUSB (IST8310)に切り替え");
+                            Toast.makeText(MeasurementActivity.this, 
+                                    "磁気センサー: F9P IST8310 (自動切替)", 
+                                    Toast.LENGTH_SHORT).show();
+                        }
                     } else {
                         Toast.makeText(MeasurementActivity.this, 
                                 R.string.gps_usb_disconnected, 
@@ -426,6 +474,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
                             panelRtkInfo.setVisibility(View.GONE);
                         }
                         updateGpsSourceDisplay();
+                        
+                        // 切断時は内蔵センサーに戻す
+                        useUsbMagneticSensor = false;
                     }
                 });
             }
@@ -449,19 +500,14 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
             });
         });
         
-        // 磁気センサーリスナー
+        // 磁気センサーリスナー（データ保存のみ、UI更新はタイマーで行う）
         usbGpsManager.setOnUsbMagneticListener((magX, magY, magZ, totalField) -> {
+            // データをフィールドに保存するだけ（UIスレッドは使わない）
             usbMagX = magX;
             usbMagY = magY;
             usbMagZ = magZ;
             usbMagTotal = totalField;
-            
-            runOnUiThread(() -> {
-                // USB GPS磁気センサーを使用中の場合、UIを更新
-                if (useUsbMagneticSensor) {
-                    updateMagneticDisplay(totalField, calculateNoise(magX, magY, magZ));
-                }
-            });
+            pimagDataReceived = true;
         });
         
         // 自動モードの場合、USB GPSデバイスの検出を試みる
@@ -490,11 +536,11 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         }
         if (textNoiseValue != null) {
             textNoiseValue.setText(String.format(Locale.getDefault(), "%.1f", noise));
-            // ノイズレベルに応じた色
+            // ノイズレベルに応じた色（0-5μT:緑, 5.1-10μT:黄, 10μT超:赤）
             int color;
-            if (noise < 10) {
+            if (noise <= 5.0) {
                 color = ContextCompat.getColor(this, R.color.status_safe);
-            } else if (noise < 30) {
+            } else if (noise <= 10.0) {
                 color = ContextCompat.getColor(this, R.color.status_warning);
             } else {
                 color = ContextCompat.getColor(this, R.color.status_danger);
@@ -502,7 +548,10 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
             textNoiseValue.setTextColor(color);
         }
         if (noiseLevelGauge != null) {
-            noiseLevelGauge.setNoiseValue(noise);
+            // ゲージの閾値を設定（5μT:緑, 10μT:赤）
+            noiseLevelGauge.setThresholds(5.0, 10.0);
+            // アニメーションなしで即座に更新（高頻度呼び出し時のフリーズ防止）
+            noiseLevelGauge.setNoiseValueImmediate(noise);
         }
     }
 
@@ -1208,6 +1257,11 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+            // USB磁気センサー使用中は内蔵センサーの値を無視
+            if (useUsbMagneticSensor) {
+                return;
+            }
+            
             magneticValues[0] = event.values[0];
             magneticValues[1] = event.values[1];
             magneticValues[2] = event.values[2];
@@ -1247,6 +1301,11 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
 
         // 位置情報取得開始
         startLocationUpdates();
+        
+        // USB磁気センサーUI更新タイマーを開始
+        if (usbMagUiHandler != null && usbMagUiRunnable != null) {
+            usbMagUiHandler.postDelayed(usbMagUiRunnable, MAG_UI_UPDATE_INTERVAL);
+        }
     }
 
     @Override
@@ -1263,6 +1322,11 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         // 自動計測停止
         if (isAutoMeasuring) {
             stopAutoMeasurement();
+        }
+        
+        // USB磁気センサーUI更新タイマーを停止
+        if (usbMagUiHandler != null && usbMagUiRunnable != null) {
+            usbMagUiHandler.removeCallbacks(usbMagUiRunnable);
         }
     }
 

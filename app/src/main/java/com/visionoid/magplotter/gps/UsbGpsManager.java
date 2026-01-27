@@ -6,11 +6,14 @@
  * 概要:
  *   USB接続のRTK GPSデバイス（H-RTK F9Pなど）を管理するクラス。
  *   USB-Serial通信を行い、NMEAデータを受信・パースする。
+ *   Raspberry Pi Pico経由でのF9P接続にも対応。
  * 
  * 主な仕様:
  *   - USBデバイスの検出・接続
  *   - シリアル通信（115200baud）
  *   - NMEAデータの受信とパース
+ *   - UBXデータの受信とパース（磁気センサー対応）
+ *   - Raspberry Pi Pico (USB CDC) の認識
  *   - 位置情報のコールバック
  * 
  * 制限事項:
@@ -32,6 +35,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import com.hoho.android.usbserial.driver.CdcAcmSerialDriver;
+import com.hoho.android.usbserial.driver.ProbeTable;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
@@ -62,6 +67,23 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
     
     /** 読み取りバッファサイズ */
     private static final int READ_BUFFER_SIZE = 4096;
+
+    // === Raspberry Pi Pico USB識別子 ===
+    
+    /** Raspberry Pi Foundation Vendor ID */
+    private static final int PICO_VENDOR_ID = 0x2E8A;
+    
+    /** Raspberry Pi Pico MicroPython USB Serial Product ID */
+    private static final int PICO_PRODUCT_ID_MICROPYTHON = 0x0005;
+    
+    /** Raspberry Pi Pico 2 (RP2350) MicroPython USB Serial Product ID */
+    private static final int PICO2_PRODUCT_ID_MICROPYTHON = 0x000B;
+    
+    /** Raspberry Pi Pico USB Serial (stdio) Product ID */
+    private static final int PICO_PRODUCT_ID_STDIO = 0x000A;
+    
+    /** Raspberry Pi Pico 2 USB Serial (stdio) Product ID */
+    private static final int PICO2_PRODUCT_ID_STDIO = 0x000F;
 
     /** コンテキスト */
     private final Context context;
@@ -104,6 +126,12 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
     
     /** 磁気センサー有効フラグ */
     private boolean magneticSensorEnabled = false;
+
+    /** Pico接続フラグ（Pico経由のF9P接続） */
+    private boolean isPicoConnected = false;
+
+    /** カスタムUSBシリアルプローバー（Pico対応） */
+    private final UsbSerialProber customProber;
 
     /**
      * 接続状態リスナー
@@ -191,26 +219,57 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
         this.ubxParser = new UbxParser();
         this.mainHandler = new Handler(Looper.getMainLooper());
 
-        // NMEAパーサーのリスナーを設定
+        // カスタムプローバーを作成（Raspberry Pi Pico対応）
+        this.customProber = createCustomProber();
+
+        // NMEAパーサーのリスナーを設定（スロットリング付き）
         nmeaParser.setOnLocationParsedListener(location -> {
-            mainHandler.post(() -> {
-                if (locationListener != null) {
-                    locationListener.onLocationUpdated(location);
-                }
-            });
+            long now = System.currentTimeMillis();
+            if (now - lastLocationNotifyTime < LOCATION_NOTIFY_INTERVAL) {
+                return; // スロットリング
+            }
+            lastLocationNotifyTime = now;
+            
+            if (locationListener != null) {
+                locationListener.onLocationUpdated(location);
+            }
         });
 
-        // UBXパーサーの磁気データリスナーを設定
+        // UBXパーサーの磁気データリスナーを設定（Pico未使用時のみ有効）
         ubxParser.setOnMagneticDataListener((magX, magY, magZ, totalField) -> {
-            mainHandler.post(() -> {
-                if (magneticListener != null) {
-                    magneticListener.onMagneticData(magX, magY, magZ, totalField);
-                }
-            });
+            // Pico接続時は$PIMAGを使用するのでスキップ
+            if (isPicoConnected) return;
+            
+            if (magneticListener != null) {
+                magneticListener.onMagneticData(magX, magY, magZ, totalField);
+            }
         });
 
         // USBイベントレシーバーを登録
         registerUsbReceiver();
+    }
+
+    /**
+     * Raspberry Pi Pico対応のカスタムプローバーを作成
+     * 
+     * @return カスタムUSBシリアルプローバー
+     */
+    private UsbSerialProber createCustomProber() {
+        ProbeTable customTable = new ProbeTable();
+        
+        // Raspberry Pi Pico (RP2040) MicroPython USB Serial
+        customTable.addProduct(PICO_VENDOR_ID, PICO_PRODUCT_ID_MICROPYTHON, CdcAcmSerialDriver.class);
+        
+        // Raspberry Pi Pico (RP2040) USB Serial (stdio)
+        customTable.addProduct(PICO_VENDOR_ID, PICO_PRODUCT_ID_STDIO, CdcAcmSerialDriver.class);
+        
+        // Raspberry Pi Pico 2 (RP2350) MicroPython USB Serial
+        customTable.addProduct(PICO_VENDOR_ID, PICO2_PRODUCT_ID_MICROPYTHON, CdcAcmSerialDriver.class);
+        
+        // Raspberry Pi Pico 2 (RP2350) USB Serial (stdio)
+        customTable.addProduct(PICO_VENDOR_ID, PICO2_PRODUCT_ID_STDIO, CdcAcmSerialDriver.class);
+        
+        return new UsbSerialProber(customTable);
     }
 
     /**
@@ -289,6 +348,7 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
 
     /**
      * 利用可能なUSB GPSデバイスを検索
+     * デフォルトプローバーとカスタムプローバー（Pico対応）の両方を使用
      * 
      * @return 見つかったデバイスのリスト
      */
@@ -298,12 +358,76 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
                 Log.w(TAG, "UsbManagerがnullです");
                 return new ArrayList<>();
             }
-            List<UsbSerialDriver> drivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager);
-            return drivers != null ? drivers : new ArrayList<>();
+            
+            List<UsbSerialDriver> allDrivers = new ArrayList<>();
+            
+            // デフォルトプローバーで検索（通常のUSBシリアルデバイス）
+            List<UsbSerialDriver> defaultDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager);
+            if (defaultDrivers != null) {
+                allDrivers.addAll(defaultDrivers);
+            }
+            
+            // カスタムプローバーで検索（Raspberry Pi Pico）
+            List<UsbSerialDriver> customDrivers = customProber.findAllDrivers(usbManager);
+            if (customDrivers != null) {
+                for (UsbSerialDriver driver : customDrivers) {
+                    // 重複を避ける
+                    boolean isDuplicate = false;
+                    for (UsbSerialDriver existing : allDrivers) {
+                        if (existing.getDevice().getDeviceId() == driver.getDevice().getDeviceId()) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+                    if (!isDuplicate) {
+                        allDrivers.add(driver);
+                        Log.d(TAG, "Pico検出: VID=" + String.format("0x%04X", driver.getDevice().getVendorId()) 
+                                + ", PID=" + String.format("0x%04X", driver.getDevice().getProductId()));
+                    }
+                }
+            }
+            
+            return allDrivers;
         } catch (Exception e) {
             Log.e(TAG, "USBデバイス検索エラー: " + e.getMessage());
             return new ArrayList<>();
         }
+    }
+
+    /**
+     * 指定されたデバイスがRaspberry Pi Picoかどうかを判定
+     * 
+     * @param device USBデバイス
+     * @return Picoの場合true
+     */
+    private boolean isPicoDevice(UsbDevice device) {
+        if (device == null) {
+            return false;
+        }
+        int vendorId = device.getVendorId();
+        int productId = device.getProductId();
+        
+        // デバッグログ
+        Log.d(TAG, String.format("USBデバイス: VID=0x%04X, PID=0x%04X", vendorId, productId));
+        
+        if (vendorId != PICO_VENDOR_ID) {
+            return false;
+        }
+        
+        // Pico (RP2040) または Pico 2 (RP2350) のProduct IDをチェック
+        return productId == PICO_PRODUCT_ID_MICROPYTHON || 
+               productId == PICO_PRODUCT_ID_STDIO ||
+               productId == PICO2_PRODUCT_ID_MICROPYTHON ||
+               productId == PICO2_PRODUCT_ID_STDIO;
+    }
+
+    /**
+     * Pico経由で接続されているかどうかを取得
+     * 
+     * @return Pico経由の場合true
+     */
+    public boolean isPicoConnected() {
+        return isPicoConnected;
     }
 
     /**
@@ -371,21 +495,23 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
 
     /**
      * 指定されたUSBデバイスに接続
+     * Raspberry Pi Pico経由の場合は自動的にESFメッセージを有効化
      * 
      * @param device USBデバイス
      * @return 接続が成功した場合true
      */
     private boolean connectToDevice(UsbDevice device) {
         try {
-            List<UsbSerialDriver> drivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager);
-            UsbSerialDriver targetDriver = null;
+            // Picoかどうかを判定
+            isPicoConnected = isPicoDevice(device);
             
-            for (UsbSerialDriver driver : drivers) {
-                if (driver.getDevice().equals(device)) {
-                    targetDriver = driver;
-                    break;
-                }
-            }
+            // バッファをリセット
+            picoBuffer.setLength(0);
+            picoDataCount = 0;
+            pimagReceiveCount = 0;
+            
+            // ドライバを検索（デフォルト + カスタム）
+            UsbSerialDriver targetDriver = findDriverForDevice(device);
 
             if (targetDriver == null) {
                 Log.e(TAG, "対応するドライバが見つかりません");
@@ -412,8 +538,34 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
             Executors.newSingleThreadExecutor().submit(ioManager);
 
             isConnected = true;
-            Log.d(TAG, "USB GPS接続成功: " + device.getDeviceName());
-            notifyConnectionStateChanged(true, device.getDeviceName());
+            
+            // デバイス名を生成
+            String deviceName = generateDeviceName(device);
+            Log.d(TAG, "USB GPS接続成功: " + deviceName);
+            notifyConnectionStateChanged(true, deviceName);
+
+            // Pico経由の場合、ソフトリセットを送信してmain.pyを起動
+            if (isPicoConnected) {
+                Log.d(TAG, "Raspberry Pi Pico検出 - ソフトリセット送信");
+                // MicroPythonをリセットしてmain.pyを自動実行させる
+                try {
+                    // Ctrl+C (0x03) で実行中のプログラムを停止
+                    serialPort.write(new byte[]{0x03}, 100);
+                    Thread.sleep(50);
+                    // Ctrl+C をもう一度（確実に停止）
+                    serialPort.write(new byte[]{0x03}, 100);
+                    Thread.sleep(50);
+                    // Ctrl+B (0x02) で通常REPLモードに戻る（raw REPLから抜ける）
+                    serialPort.write(new byte[]{0x02}, 100);
+                    Thread.sleep(100);
+                    // Ctrl+D (0x04) でソフトリセット → main.py自動実行
+                    serialPort.write(new byte[]{0x04}, 100);
+                    Log.d(TAG, "ソフトリセット送信完了");
+                } catch (Exception e) {
+                    Log.e(TAG, "ソフトリセット送信エラー: " + e.getMessage());
+                }
+                // Pico経由では$PIMAGを使用するのでESFコマンドは送信しない
+            }
 
             return true;
 
@@ -426,10 +578,59 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
     }
 
     /**
+     * 指定されたデバイスに対応するドライバを検索
+     * 
+     * @param device USBデバイス
+     * @return 対応するドライバ（見つからない場合null）
+     */
+    private UsbSerialDriver findDriverForDevice(UsbDevice device) {
+        // デフォルトプローバーで検索
+        List<UsbSerialDriver> defaultDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager);
+        if (defaultDrivers != null) {
+            for (UsbSerialDriver driver : defaultDrivers) {
+                if (driver.getDevice().equals(device)) {
+                    return driver;
+                }
+            }
+        }
+        
+        // カスタムプローバーで検索（Pico対応）
+        List<UsbSerialDriver> customDrivers = customProber.findAllDrivers(usbManager);
+        if (customDrivers != null) {
+            for (UsbSerialDriver driver : customDrivers) {
+                if (driver.getDevice().equals(device)) {
+                    return driver;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * デバイス名を生成
+     * 
+     * @param device USBデバイス
+     * @return デバイス名
+     */
+    private String generateDeviceName(UsbDevice device) {
+        if (isPicoDevice(device)) {
+            return "Raspberry Pi Pico (F9P Bridge)";
+        }
+        String productName = device.getProductName();
+        if (productName != null && !productName.isEmpty()) {
+            return productName;
+        }
+        return device.getDeviceName();
+    }
+
+    /**
      * USB GPSデバイスから切断
      */
     public void disconnect() {
         isConnected = false;
+        isPicoConnected = false;
+        magneticSensorEnabled = false;
 
         if (ioManager != null) {
             ioManager.setListener(null);
@@ -452,6 +653,7 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
         }
 
         nmeaParser.reset();
+        ubxParser.reset();
         receiveBuffer.setLength(0);
 
         Log.d(TAG, "USB GPS切断完了");
@@ -493,7 +695,13 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
 
     @Override
     public void onNewData(byte[] data) {
-        // UBXバイナリデータをパース（磁気センサーデータ取得用）
+        // Pico接続時は$PIMAGのみを軽量に検出（他のデータは破棄）
+        if (isPicoConnected) {
+            processPicoData(data);
+            return;
+        }
+        
+        // F9P直接接続時のみUBXとNMEAをパース
         if (magneticSensorEnabled) {
             ubxParser.parse(data);
         }
@@ -525,6 +733,128 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
         if (receiveBuffer.length() > READ_BUFFER_SIZE) {
             receiveBuffer.setLength(0);
         }
+    }
+    
+    /** Pico用の軽量バッファ */
+    private StringBuilder picoBuffer = new StringBuilder(256);
+    
+    /** Picoデータ受信カウンター */
+    private int picoDataCount = 0;
+    
+    /**
+     * Pico接続時の軽量データ処理
+     * $PIMAGメッセージのみを検出して処理する
+     */
+    private void processPicoData(byte[] data) {
+        String received = new String(data);
+        picoBuffer.append(received);
+        
+        // デバッグ: データ受信状況（最初の10回のみ）
+        picoDataCount++;
+        if (picoDataCount <= 10) {
+            // 受信データの先頭50文字を表示
+            String preview = received.length() > 50 ? received.substring(0, 50) : received;
+            preview = preview.replace("\r", "\\r").replace("\n", "\\n");
+            Log.d(TAG, "Pico受信[" + picoDataCount + "]: " + data.length + "bytes [" + preview + "]");
+        }
+        
+        // $PIMAGを検索
+        int pimagStart = picoBuffer.indexOf("$PIMAG");
+        if (pimagStart < 0) {
+            // $PIMAGがなければバッファをクリア（先頭256バイトのみ保持）
+            if (picoBuffer.length() > 256) {
+                picoBuffer.delete(0, picoBuffer.length() - 128);
+            }
+            return;
+        }
+        
+        // 改行を検索
+        int newlinePos = picoBuffer.indexOf("\n", pimagStart);
+        if (newlinePos < 0) {
+            return; // まだ完全なメッセージではない
+        }
+        
+        // $PIMAGメッセージを抽出
+        String pimagLine = picoBuffer.substring(pimagStart, newlinePos).trim();
+        
+        // バッファをクリア
+        picoBuffer.delete(0, newlinePos + 1);
+        
+        // パース
+        pimagReceiveCount++;
+        if (pimagReceiveCount <= 3 || pimagReceiveCount % 100 == 0) {
+            Log.i(TAG, "PIMAG[" + pimagReceiveCount + "]: " + pimagLine);
+        }
+        parsePicoMagneticMessage(pimagLine);
+    }
+
+    /**
+     * Picoからの磁気センサーメッセージをパース
+     * フォーマット: $PIMAG,magX,magY,magZ,totalField*XX
+     * 
+     * @param sentence NMEAセンテンス
+     */
+    private void parsePicoMagneticMessage(String sentence) {
+        try {
+            // スロットリング: 通知間隔を制限してUIフリーズを防止
+            long now = System.currentTimeMillis();
+            if (now - lastMagNotifyTime < MAG_NOTIFY_INTERVAL) {
+                return; // 間隔内はスキップ
+            }
+            lastMagNotifyTime = now;
+            
+            // チェックサムを除去
+            String data = sentence;
+            if (sentence.contains("*")) {
+                data = sentence.substring(0, sentence.indexOf('*'));
+            }
+
+            // $PIMAGを除去してカンマで分割
+            String[] parts = data.substring(1).split(",");
+            if (parts.length < 5) {
+                return; // パース失敗は無視
+            }
+
+            // PIMAG,magX,magY,magZ,totalField
+            float magX = Float.parseFloat(parts[1]);
+            float magY = Float.parseFloat(parts[2]);
+            float magZ = Float.parseFloat(parts[3]);
+            float totalField = Float.parseFloat(parts[4]);
+
+            // リスナーに直接通知（UIスレッドを使わない）
+            if (magneticListener != null) {
+                Log.d(TAG, "磁気リスナー通知: " + totalField + "μT");
+                magneticListener.onMagneticData(magX, magY, magZ, totalField);
+            } else {
+                Log.w(TAG, "磁気リスナーがnull");
+            }
+
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "PIMAGパースエラー: " + sentence + " - " + e.getMessage());
+        }
+    }
+
+    /** PIMAGデータ受信カウンター（デバッグ用） */
+    private int pimagReceiveCount = 0;
+    
+    /** 磁気データ通知の最終時刻（スロットリング用） */
+    private long lastMagNotifyTime = 0;
+    
+    /** 磁気データ通知間隔（ミリ秒） */
+    private static final long MAG_NOTIFY_INTERVAL = 50; // 20Hz
+    
+    /** 位置情報通知の最終時刻（スロットリング用） */
+    private long lastLocationNotifyTime = 0;
+    
+    /** 位置情報通知間隔（ミリ秒） */
+    private static final long LOCATION_NOTIFY_INTERVAL = 500; // 2Hz
+
+    /**
+     * PIMAG受信状況を取得（デバッグ用）
+     * @return 受信カウント
+     */
+    public int getPimagReceiveCount() {
+        return pimagReceiveCount;
     }
 
     @Override
