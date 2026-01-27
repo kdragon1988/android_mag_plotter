@@ -5,18 +5,73 @@
 ![Platform](https://img.shields.io/badge/Platform-Android%2015-green)
 ![Language](https://img.shields.io/badge/Language-Java-orange)
 ![License](https://img.shields.io/badge/License-Proprietary-blue)
-![Version](https://img.shields.io/badge/Version-2.1.0-blue)
+![Version](https://img.shields.io/badge/Version-2.2.0-blue)
 
 ## 📱 プラットフォーム
 
 | バージョン | リポジトリ | 状態 |
 |-----------|-----------|------|
-| **Android（安定版）** | このリポジトリ | ✅ v2.1.0 リリース済み |
+| **Android（安定版）** | このリポジトリ | ✅ v2.2.0 リリース済み |
 | **Flutter（iOS/Android）** | [mag_plotter_flutter](https://github.com/kdragon1988/mag_plotter_flutter) | 🚧 開発中 |
 
 ## 概要
 
 VISIONOID MAG PLOTTERは、ドローンショー実施前の現場磁場環境を調査するためのAndroidアプリケーションです。地面からの磁場ノイズを計測・可視化し、ドローンのコンパスに影響を与える危険エリアをヒートマップで特定します。
+
+## 🆕 v2.2.0 新機能
+
+### 🛰️ USB RTK GPS対応（H-RTK F9P）
+
+高精度RTK GPS（H-RTK F9P）をUSB経由で接続し、センチメートル級の位置精度で計測できるようになりました。
+
+| 機能 | 説明 |
+|------|------|
+| **RTK Fix表示** | Fix状態（RTK Fix/Float/3D Fix/DGPS）をリアルタイム表示 |
+| **高精度位置** | RTK補正時はcm級の位置精度 |
+| **衛星情報** | 使用衛星数・受信衛星数の表示 |
+
+### 🧲 外部磁気センサー対応（IST8310）
+
+H-RTK F9P内蔵のIST8310磁気センサーに対応。スマートフォン内蔵センサーより安定した磁場計測が可能です。
+
+| 特徴 | 内蔵センサー | IST8310（USB） |
+|------|-------------|----------------|
+| 安定性 | 端末による差あり | 高安定 |
+| スマホの影響 | 受ける | 受けない |
+| 更新レート | 端末依存 | 20Hz固定 |
+| 接続 | 不要 | Raspberry Pi Pico経由 |
+
+### 🍓 Raspberry Pi Pico対応
+
+Raspberry Pi PicoをUSBブリッジとして使用し、H-RTK F9PのGPS・磁気データをAndroidに転送します。
+
+```
+H-RTK F9P (GPS + Compass)
+        │
+        ├── UART (TX/RX) ──► Raspberry Pi Pico ──► USB CDC ──► Android
+        └── I2C (SDA/SCL) ──► IST8310 磁気センサー
+```
+
+**対応モデル:**
+- Raspberry Pi Pico (RP2040)
+- Raspberry Pi Pico 2 (RP2350)
+
+詳細なセットアップ手順は [`pico/README.md`](pico/README.md) を参照してください。
+
+---
+
+## 🆕 v2.1.0 新機能
+
+### ✏️ 地図作図機能
+計測画面上で図形を描画できるようになりました：
+
+| 図形 | 機能 |
+|------|------|
+| **ポリゴン** | 任意の多角形を描画、面積計算 |
+| **ライン** | 線分を描画、距離計算 |
+| **サークル** | 円を描画、半径・面積表示 |
+
+---
 
 ## 🆕 v2.0.0 新機能
 
@@ -31,11 +86,6 @@ VISIONOID MAG PLOTTERは、ドローンショー実施前の現場磁場環境�
 
 これらのレイヤーは**改正航空法**に基づくドローン飛行規制区域を視覚化し、安全な飛行計画の立案をサポートします。
 
-### レイヤー操作
-- 計測画面右上のメニューから「レイヤー選択」でON/OFF切り替え
-- 各レイヤーの表示/非表示を個別に制御可能
-- レイヤー有効化時に該当エリアへの自動ズーム
-
 ---
 
 ## 主な機能
@@ -47,19 +97,26 @@ VISIONOID MAG PLOTTERは、ドローンショー実施前の現場磁場環境�
 
 ### 📍 位置情報取得
 - GPS/GNSSによるリアルタイム位置取得
-- 位置精度の表示
+- **USB RTK GPS対応**（H-RTK F9P）
+- RTK Fix状態・精度の表示
 - オフライン動作対応
 
 ### 🧭 磁場計測
 - 端末内蔵磁気センサーによる3軸計測
-- 総磁場強度（μT）のリアルタイム表示
+- **USB外部磁気センサー対応**（IST8310）
+- 総磁場強度（μT）のリアルタイム表示（20Hz）
 - ノイズ値（基準値との偏差）の算出
 
-### 🗺️ マップレイヤー（v2.0.0〜）
+### 🗺️ マップレイヤー
 - DID（人口集中地区）レイヤー表示
 - 空港等周辺制限区域レイヤー表示
 - 飛行禁止区域レイヤー表示
 - GeoJSON形式のカスタムレイヤー対応
+
+### ✏️ 作図機能
+- ポリゴン・ライン・サークル描画
+- 距離・面積の自動計算
+- 図形の保存・編集
 
 ## 🧲 磁場ノイズとドローンの関係（やさしい解説）
 
@@ -99,7 +156,7 @@ VISIONOID MAG PLOTTERは、ドローンショー実施前の現場磁場環境�
 
 **「その場所の磁場の強さ」**を表す数値です。
 
-スマホには小さな磁気センサーが入っていて、前後（X）・左右（Y）・上下（Z）の3方向の磁場を測っています。このアプリでは3方向の値を合成して、**トータルの磁場の強さ**を計算しています。
+磁気センサー（内蔵またはIST8310）から取得した前後（X）・左右（Y）・上下（Z）の3方向の磁場を合成して、**トータルの磁場の強さ**を計算しています。
 
 ```
 MAG FIELD = √(Bx² + By² + Bz²)
@@ -128,11 +185,11 @@ NOISE = |MAG FIELD − 基準値|
 
 **計算例**:
 - 日本の基準値: 46μT
-- 計測した値: 52μT
-- **ノイズ = |52 − 46| = 6μT** → 安全 ✅
+- 計測した値: 48μT
+- **ノイズ = |48 − 46| = 2μT** → 安全 ✅
 
-- 計測した値: 98μT
-- **ノイズ = |98 − 46| = 52μT** → 危険！🔴
+- 計測した値: 60μT
+- **ノイズ = |60 − 46| = 14μT** → 危険！🔴
 
 ---
 
@@ -140,9 +197,9 @@ NOISE = |MAG FIELD − 基準値|
 
 | 色 | 判定 | ノイズ値 | 意味 |
 |-----|------|---------|------|
-| 🟢 緑 | **SAFE** | 10μT未満 | 問題なし。ドローン離陸OK |
-| 🟡 黄 | **WARNING** | 10〜50μT | 要注意。なるべく避ける |
-| 🔴 赤 | **DANGER** | 50μT以上 | 危険！この場所での離着陸NG |
+| 🟢 緑 | **SAFE** | 0〜5μT | 問題なし。ドローン離陸OK |
+| 🟡 黄 | **WARNING** | 5.1〜10μT | 要注意。なるべく避ける |
+| 🔴 赤 | **DANGER** | 10μT超 | 危険！この場所での離着陸NG |
 
 ---
 
@@ -161,7 +218,23 @@ NOISE = |MAG FIELD − 基準値|
 
 ### センサー仕様
 
-端末の磁気センサー（`TYPE_MAGNETIC_FIELD`）から取得したX, Y, Z軸の磁場値から、**総磁場強度**を算出します。
+#### 内蔵磁気センサー
+端末の磁気センサー（`TYPE_MAGNETIC_FIELD`）から取得したX, Y, Z軸の磁場値を使用。
+
+#### USB磁気センサー（IST8310）
+H-RTK F9P内蔵のIST8310からRaspberry Pi Pico経由でデータを取得。独自の`$PIMAG`プロトコルを使用。
+
+```
+$PIMAG,magX,magY,magZ,totalField*XX
+```
+
+| フィールド | 説明 | 単位 |
+|-----------|------|------|
+| magX | X軸磁場強度 | μT |
+| magY | Y軸磁場強度 | μT |
+| magZ | Z軸磁場強度 | μT |
+| totalField | 総磁場強度 | μT |
+| XX | チェックサム | - |
 
 ```java
 // 3軸の磁場値から総磁場強度を計算
@@ -171,23 +244,38 @@ double magField = Math.sqrt(Bx*Bx + By*By + Bz*Bz);
 double noise = Math.abs(magField - referenceMag);
 ```
 
-| 変数 | 説明 |
-|------|------|
-| Bx | X軸方向の磁場強度 (μT) |
-| By | Y軸方向の磁場強度 (μT) |
-| Bz | Z軸方向の磁場強度 (μT) |
-| referenceMag | 基準磁場値（デフォルト46μT） |
+### GPS/GNSS仕様
+
+#### 内蔵GPS
+Android標準の`LocationManager`を使用。
+
+#### USB RTK GPS（H-RTK F9P）
+NMEA 0183およびu-blox UBXプロトコルに対応。
+
+| プロトコル | メッセージ | 用途 |
+|-----------|-----------|------|
+| NMEA | GGA, RMC, GSV | 位置・時刻・衛星情報 |
+| UBX | NAV-PVT | 高精度位置・速度 |
+| UBX | NAV-SAT | 衛星詳細情報 |
+
+**RTK Fix状態**:
+| 状態 | 精度 | 色 |
+|------|------|-----|
+| RTK Fix | cm級 | 🟢 緑 |
+| RTK Float | dm級 | 🟡 黄 |
+| 3D Fix / DGPS | m級 | 🔵 青 |
+| No Fix | - | 🔴 赤 |
 
 ---
 
 ### 🗺️ ヒートマップ表示
 - OpenStreetMap ベースの地図
 - 計測ポイントを色分け表示
-  - 🟢 **緑**: 安全（ノイズ < 安全閾値）
-  - 🟡 **黄**: 注意（安全閾値 ≤ ノイズ < 危険閾値）
-  - 🔴 **赤**: 危険（ノイズ ≥ 危険閾値）
+  - 🟢 **緑**: 安全（ノイズ ≤ 5μT）
+  - 🟡 **黄**: 注意（5μT < ノイズ ≤ 10μT）
+  - 🔴 **赤**: 危険（ノイズ > 10μT）
 
-### 🗺️ GeoJSONレイヤー（v2.0.0〜）
+### 🗺️ GeoJSONレイヤー
 
 マップ上にGeoJSON形式のポリゴンレイヤーを表示できます。
 
@@ -233,15 +321,17 @@ mapLayerManager.addLayer(LayerType.DID, geoJsonData);
 | 地図API | OpenStreetMap (osmdroid) |
 | データベース | SQLite (Room) |
 | アーキテクチャ | MVVM |
+| USB Serial | hoho.android.usbserial |
 
 ## デフォルト設定値
 
 | 設定項目 | デフォルト値 |
 |---------|------------|
 | 基準磁場値 | 46.0 μT（日本平均） |
-| 安全閾値 | 10.0 μT |
-| 危険閾値 | 50.0 μT |
+| 安全閾値 | 5.0 μT |
+| 危険閾値 | 10.0 μT |
 | 計測間隔 | 1.0 秒 |
+| 磁気センサー更新 | 20Hz（50ms） |
 
 ## 必要なパーミッション
 
@@ -284,30 +374,37 @@ app/src/main/
 │   ├── data/
 │   │   ├── dao/                       # Data Access Objects
 │   │   ├── db/                        # Database
-│   │   ├── layer/                     # レイヤーデータ管理（v2.0.0〜）
-│   │   │   └── LayerDataRepository.java
+│   │   ├── layer/                     # レイヤーデータ管理
 │   │   ├── model/                     # エンティティ
 │   │   └── repository/                # リポジトリ
+│   ├── gps/                           # GPS/GNSS関連（v2.2.0〜）
+│   │   ├── GpsFixStatus.java          # RTK Fix状態
+│   │   ├── GpsLocation.java           # GPS位置情報
+│   │   ├── GpsSourceType.java         # GPSソース種別
+│   │   ├── NmeaParser.java            # NMEAパーサー
+│   │   ├── UbxMessage.java            # UBXメッセージ
+│   │   ├── UbxParser.java             # UBXパーサー
+│   │   └── UsbGpsManager.java         # USB GPS管理
 │   ├── ui/
 │   │   ├── splash/                    # スプラッシュ画面
 │   │   ├── mission/                   # ミッション管理
 │   │   ├── measurement/               # 計測画面
 │   │   ├── settings/                  # 設定画面
 │   │   ├── offlinemap/                # オフライン地図
-│   │   └── map/                       # マップ関連（v2.0.0〜）
+│   │   ├── view/                      # カスタムビュー
+│   │   │   └── NoiseLevelGauge.java   # ノイズレベルゲージ
+│   │   └── map/                       # マップ関連
+│   │       ├── drawing/               # 作図機能
 │   │       └── layer/                 # レイヤー管理
-│   │           ├── GeoJsonParser.java
-│   │           ├── LayerDisplayStyle.java
-│   │           ├── LayerType.java
-│   │           └── MapLayerManager.java
-│   └── service/                       # バックグラウンドサービス
+│   └── util/                          # ユーティリティ
 ├── res/
 │   ├── layout/                        # レイアウトXML
 │   ├── values/                        # リソース値
 │   ├── drawable/                      # ドローアブル
 │   └── menu/                          # メニュー
-└── tools/
-    └── download_did_data.py           # DIDデータダウンロードツール
+└── pico/                              # Raspberry Pi Pico ファームウェア
+    ├── main.py                        # MicroPythonファームウェア
+    └── README.md                      # Picoセットアップガイド
 ```
 
 ## UI デザイン
@@ -321,7 +418,7 @@ app/src/main/
 - **警告**: #FF6B35（オレンジ）
 - **危険**: #FF0055（ネオンレッド）
 
-### レイヤーカラー（v2.0.0〜）
+### レイヤーカラー
 - **DID**: #FF9800（オレンジ）透過度30%
 - **空港制限**: #F44336（赤）透過度30%
 - **飛行禁止**: #2196F3（青）透過度30%
@@ -334,14 +431,32 @@ app/src/main/
 
 ## 使用方法
 
+### 基本的な使い方
+
 1. **ミッション作成**: 新規ミッションを作成し、場所名・担当者・閾値を設定
 2. **現場へ移動**: オフライン地図を事前にダウンロード（必要に応じて）
-3. **レイヤー表示**（v2.0.0〜）: メニュー → レイヤー選択でDID等を表示
+3. **レイヤー表示**: メニュー → レイヤー選択でDID等を表示
 4. **計測実施**: 
    - 自動モード: 設定間隔で自動的に計測
    - 手動モード: ボタンタップで任意のポイントを計測
 5. **結果確認**: ヒートマップで危険エリアを視覚的に確認
 6. **エクスポート**: スクリーンショットを保存して共有
+
+### USB RTK GPS + 磁気センサーを使う場合
+
+1. **ハードウェア準備**:
+   - H-RTK F9PとRaspberry Pi Picoを接続（[pico/README.md](pico/README.md)参照）
+   - PicoにMicroPythonファームウェアを書き込み
+
+2. **Android接続**:
+   - USB OTGケーブルでPico → Android接続
+   - 「USB GPS接続完了」トースト表示を確認
+   - 「磁気センサー: F9P IST8310 (自動切替)」トースト表示を確認
+
+3. **計測**:
+   - RTK Fix状態がリアルタイムで表示
+   - 磁気センサーは自動的にIST8310に切り替わり
+   - 20Hzで高速更新
 
 ## DIDデータの更新
 
@@ -358,6 +473,7 @@ python download_did_data.py
 
 | バージョン | リリース日 | 主な変更点 |
 |-----------|-----------|-----------|
+| v2.2.0 | 2025-01 | USB RTK GPS対応、外部磁気センサー（IST8310）対応、Raspberry Pi Picoブリッジ対応、ノイズ閾値調整（0-5/5-10/10+μT） |
 | v2.1.0 | 2024-12-25 | 地図作図機能追加（ポリゴン/ライン/サークル描画、距離・面積計算） |
 | v2.0.0 | 2024-12-25 | GeoJSONマップレイヤー機能追加（DID/空港制限/飛行禁止） |
 | v1.0.0 | 2024-12-01 | 初回リリース |
@@ -371,3 +487,5 @@ Proprietary - VISIONOID Inc.
 - [osmdroid](https://github.com/osmdroid/osmdroid) - OpenStreetMap for Android
 - [OpenStreetMap](https://www.openstreetmap.org/) - 地図データ
 - [国土地理院](https://www.gsi.go.jp/) - DID（人口集中地区）データ
+- [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android) - USB Serial通信
+- [MicroPython](https://micropython.org/) - Raspberry Pi Pico ファームウェア
