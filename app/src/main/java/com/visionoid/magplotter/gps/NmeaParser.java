@@ -9,6 +9,7 @@
  * 
  * 主な仕様:
  *   - GGA: 位置、時刻、Fix品質、衛星数、HDOP
+ *   - GLL: 位置、時刻（F9P UART1で利用）
  *   - RMC: 位置、時刻、速度、方位
  *   - GSA: Fix種別、衛星ID、DOP値
  *   - GSV: 衛星詳細情報
@@ -106,6 +107,8 @@ public class NmeaParser {
             // センテンスタイプに応じてパース
             if (sentenceType.endsWith("GGA")) {
                 return parseGga(parts);
+            } else if (sentenceType.endsWith("GLL")) {
+                return parseGll(parts);
             } else if (sentenceType.endsWith("RMC")) {
                 return parseRmc(parts);
             } else if (sentenceType.endsWith("GSA")) {
@@ -174,7 +177,8 @@ public class NmeaParser {
                 float hdop = Float.parseFloat(parts[8]);
                 currentLocation.setHdop(hdop);
                 // HDOPから概算精度を計算（約3m × HDOP）
-                currentLocation.setHorizontalAccuracy(hdop * 3.0f);
+                float calculatedAccuracy = hdop * 3.0f;
+                currentLocation.setHorizontalAccuracy(calculatedAccuracy);
             }
 
             // 高度をパース
@@ -189,6 +193,64 @@ public class NmeaParser {
 
         } catch (NumberFormatException e) {
             Log.e(TAG, "GGAパースエラー: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * GLLセンテンスをパース（位置情報）
+     * 
+     * フォーマット:
+     * $GNGLL,3551.64377,N,13917.71825,E,153132.00,A,A*6C
+     *   0: センテンスID
+     *   1: 緯度
+     *   2: N/S
+     *   3: 経度
+     *   4: E/W
+     *   5: UTC時刻
+     *   6: ステータス（A=有効, V=無効）
+     *   7: モード（A=自律, D=差分, E=推定, M=手動, N=無効）
+     */
+    private boolean parseGll(String[] parts) {
+        try {
+            // ステータスチェック
+            if (parts.length > 6 && "V".equals(parts[6])) {
+                return false;  // 無効なデータ
+            }
+
+            // 緯度をパース
+            if (parts.length > 2 && !parts[1].isEmpty()) {
+                double latitude = parseLatitude(parts[1], parts[2]);
+                currentLocation.setLatitude(latitude);
+            }
+
+            // 経度をパース
+            if (parts.length > 4 && !parts[3].isEmpty()) {
+                double longitude = parseLongitude(parts[3], parts[4]);
+                currentLocation.setLongitude(longitude);
+            }
+
+            // GLLにはHDOPがないので、GSAから取得した値を使用
+            // FixStatusがまだ設定されていない場合はFIX_3Dを設定
+            if (currentLocation.getFixStatus() == GpsFixStatus.NO_FIX) {
+                currentLocation.setFixStatus(GpsFixStatus.FIX_3D);
+            }
+            
+            // HDOPが設定されている場合、精度を計算
+            float hdop = currentLocation.getHdop();
+            if (hdop > 0) {
+                float calculatedAccuracy = hdop * 3.0f;
+                currentLocation.setHorizontalAccuracy(calculatedAccuracy);
+            }
+
+            currentLocation.setTimestamp(System.currentTimeMillis());
+            
+            
+            notifyLocationUpdated();
+            return true;
+
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "GLLパースエラー: " + e.getMessage());
             return false;
         }
     }
@@ -287,6 +349,9 @@ public class NmeaParser {
             if (parts.length > 16 && !parts[16].isEmpty()) {
                 float hdop = Float.parseFloat(parts[16]);
                 currentLocation.setHdop(hdop);
+                // GSAのHDOPから精度を計算（HDOPが更新されるたびに再計算）
+                float calculatedAccuracy = hdop * 3.0f;
+                currentLocation.setHorizontalAccuracy(calculatedAccuracy);
             }
             if (parts.length > 17 && !parts[17].isEmpty()) {
                 // VDOPの末尾にチェックサムが含まれる可能性があるため処理

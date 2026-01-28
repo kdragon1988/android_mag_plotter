@@ -140,6 +140,11 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private Location currentLocation;
     private float currentAccuracy = 0;
     
+    /** USB GPSからの最終位置情報受信時刻（フォールバック判定用） */
+    private long lastUsbGpsUpdateTime = 0;
+    /** USB GPSフォールバックのタイムアウト（ミリ秒） */
+    private static final long USB_GPS_FALLBACK_TIMEOUT = 5000;
+    
     // GNSS（サテライト）関連
     private LocationManager locationManager;
     private GnssStatus.Callback gnssStatusCallback;
@@ -366,6 +371,16 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
+                // USB GPS（Pico）接続中でも、USB GPSからデータが来ていない場合は内蔵GPSにフォールバック
+                boolean isPico = usbGpsManager != null && usbGpsManager.isPicoConnected();
+                if (isPico) {
+                    long timeSinceLastUsbGps = System.currentTimeMillis() - lastUsbGpsUpdateTime;
+                    if (lastUsbGpsUpdateTime > 0 && timeSinceLastUsbGps < USB_GPS_FALLBACK_TIMEOUT) {
+                        // USB GPSから最近データが来ている場合は内蔵GPSを無視
+                        return;
+                    }
+                }
+                
                 Location location = locationResult.getLastLocation();
                 if (location != null) {
                     currentLocation = location;
@@ -577,6 +592,9 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         if (location == null || !location.isValid()) {
             return;
         }
+        
+        // USB GPSから有効なデータを受信した時刻を記録（フォールバック判定用）
+        lastUsbGpsUpdateTime = System.currentTimeMillis();
         
         // 現在位置を更新（内蔵GPSと同様に処理）
         currentLocation = location.toAndroidLocation();

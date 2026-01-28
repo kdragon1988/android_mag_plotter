@@ -36,6 +36,7 @@ from neopixel import NeoPixel
 import sys
 import time
 import select
+import micropython
 
 
 # =============================================================================
@@ -44,6 +45,7 @@ import select
 
 # UART設定
 UART_ID = 0
+# H-RTK F9P (Holybro) デフォルト: 115200bps
 UART_BAUDRATE = 115200
 UART_TX_PIN = 0  # GP0
 UART_RX_PIN = 1  # GP1
@@ -672,6 +674,7 @@ class GpsBridge:
         # 統計情報
         self.bytesReceived = 0
         self.bytesSent = 0
+        self.startTime = time.ticks_ms()
         
         # USB入力用ポーラー
         self.usbPoller = select.poll()
@@ -687,24 +690,31 @@ class GpsBridge:
     
     def initializeF9p(self):
         """
-        F9Pの初期化（ESFメッセージの有効化 + 磁気センサー初期化）
+        F9Pの初期化（NMEAメッセージ有効化 + 磁気センサー初期化）
         """
         print("F9P初期化中...")
         
         # 少し待機してF9Pの起動を待つ
         time.sleep(1)
         
-        # ESF-RAWメッセージを有効化（念のため）
-        cmd = UbxCommand.buildEnableEsfRawCommand()
-        self.uart.write(cmd)
-        print("ESF-RAW有効化コマンド送信")
-        time.sleep(0.1)
+        # NMEA GGAメッセージをUART1で有効化
+        # UBX-CFG-MSG: msgClass=0xF0, msgID=0x00 (GGA), rate[6]
+        gga_cmd = self.buildCfgMsgCommand(0xF0, 0x00, 1)
+        self.uart.write(gga_cmd)
+        print("NMEA GGA有効化コマンド送信")
+        time.sleep(0.2)
         
-        # ESF-MEASメッセージを有効化（念のため）
-        cmd = UbxCommand.buildEnableEsfMeasCommand()
-        self.uart.write(cmd)
-        print("ESF-MEAS有効化コマンド送信")
-        time.sleep(0.1)
+        # NMEA RMCメッセージをUART1で有効化
+        rmc_cmd = self.buildCfgMsgCommand(0xF0, 0x04, 1)
+        self.uart.write(rmc_cmd)
+        print("NMEA RMC有効化コマンド送信")
+        time.sleep(0.2)
+        
+        # NMEA VTGメッセージをUART1で有効化
+        vtg_cmd = self.buildCfgMsgCommand(0xF0, 0x05, 1)
+        self.uart.write(vtg_cmd)
+        print("NMEA VTG有効化コマンド送信")
+        time.sleep(0.2)
         
         # IST8310磁気センサーを初期化
         if self.magSensor.initialize():
@@ -713,6 +723,44 @@ class GpsBridge:
             print("磁気センサー初期化失敗 - I2C経由の読み取りは無効")
         
         print("F9P初期化完了")
+    
+    def buildCfgMsgCommand(self, msgClass, msgId, uart1Rate):
+        """
+        UBX-CFG-MSG コマンドを作成
+        
+        Args:
+            msgClass: メッセージクラス (例: 0xF0 for NMEA)
+            msgId: メッセージID (例: 0x00 for GGA)
+            uart1Rate: UART1の出力レート (0=無効, 1=毎回)
+        
+        Returns:
+            bytes: UBXコマンド
+        """
+        # Payload: msgClass, msgID, rate[6] (I2C, UART1, UART2, USB, SPI, reserved)
+        payload = bytes([
+            msgClass, msgId,
+            0,          # I2C rate
+            uart1Rate,  # UART1 rate
+            0,          # UART2 rate
+            1,          # USB rate
+            0,          # SPI rate
+            0           # reserved
+        ])
+        
+        # Header: class=0x06, id=0x01 (CFG-MSG)
+        header = bytes([0x06, 0x01])
+        length = len(payload)
+        
+        # チェックサム計算
+        checksumData = header + bytes([length & 0xFF, (length >> 8) & 0xFF]) + payload
+        ckA = 0
+        ckB = 0
+        for b in checksumData:
+            ckA = (ckA + b) & 0xFF
+            ckB = (ckB + ckA) & 0xFF
+        
+        # 完全なUBXメッセージ
+        return bytes([0xB5, 0x62]) + checksumData + bytes([ckA, ckB])
     
     def toggleLed(self):
         """
@@ -731,7 +779,8 @@ class GpsBridge:
         Returns:
             bool: データを処理した場合True
         """
-        if self.uart.any():
+        available = self.uart.any()
+        if available:
             # UARTからデータを読み取り
             data = self.uart.read(UART_BUFFER_SIZE)
             if data:
@@ -835,8 +884,14 @@ class GpsBridge:
         time.sleep(0.5)
         self.led.value(0)
         
+        # デバッグ用タイマー
+        lastStatusTime = time.ticks_ms()
+        loopCount = 0
+        
         # メインループ
         while True:
+            loopCount += 1
+            
             # UARTデータ処理（F9P → Android）
             self.processUartData()
             
@@ -848,6 +903,14 @@ class GpsBridge:
             
             # ビープ音の非同期処理
             self.feedback.processBeep()
+            
+            # 5秒ごとにステータス表示（最初の30秒のみ）
+            currentTime = time.ticks_ms()
+            if time.ticks_diff(currentTime, lastStatusTime) > 5000:
+                elapsed = time.ticks_diff(currentTime, self.startTime) // 1000
+                if elapsed <= 30:
+                    print(f"[STATUS] {elapsed}秒経過: UART受信={self.bytesReceived}bytes, ループ={loopCount}")
+                lastStatusTime = currentTime
 
 
 # =============================================================================
@@ -858,6 +921,11 @@ def main():
     """
     メイン関数
     """
+    # USBからのCtrl+C (0x03) によるKeyboardInterruptを即座に無効化
+    # これにより、USB経由でバイナリデータを受信してもプログラムが終了しない
+    # 注意: Thonnyでの開発時はBOOTSELモードでリセットが必要
+    micropython.kbd_intr(-1)
+    
     bridge = None
     try:
         bridge = GpsBridge()

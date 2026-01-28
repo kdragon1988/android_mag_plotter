@@ -544,26 +544,10 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
             Log.d(TAG, "USB GPS接続成功: " + deviceName);
             notifyConnectionStateChanged(true, deviceName);
 
-            // Pico経由の場合、ソフトリセットを送信してmain.pyを起動
+            // Pico経由の場合、main.pyは電源投入時に自動起動するので
+            // ソフトリセットは送信しない（Ctrl+Cがmain.pyを停止させてしまうため）
             if (isPicoConnected) {
-                Log.d(TAG, "Raspberry Pi Pico検出 - ソフトリセット送信");
-                // MicroPythonをリセットしてmain.pyを自動実行させる
-                try {
-                    // Ctrl+C (0x03) で実行中のプログラムを停止
-                    serialPort.write(new byte[]{0x03}, 100);
-                    Thread.sleep(50);
-                    // Ctrl+C をもう一度（確実に停止）
-                    serialPort.write(new byte[]{0x03}, 100);
-                    Thread.sleep(50);
-                    // Ctrl+B (0x02) で通常REPLモードに戻る（raw REPLから抜ける）
-                    serialPort.write(new byte[]{0x02}, 100);
-                    Thread.sleep(100);
-                    // Ctrl+D (0x04) でソフトリセット → main.py自動実行
-                    serialPort.write(new byte[]{0x04}, 100);
-                    Log.d(TAG, "ソフトリセット送信完了");
-                } catch (Exception e) {
-                    Log.e(TAG, "ソフトリセット送信エラー: " + e.getMessage());
-                }
+                Log.d(TAG, "Raspberry Pi Pico検出 - main.pyは自動起動済み");
                 // Pico経由では$PIMAGを使用するのでESFコマンドは送信しない
             }
 
@@ -695,21 +679,21 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
 
     @Override
     public void onNewData(byte[] data) {
-        // Pico接続時は$PIMAGのみを軽量に検出（他のデータは破棄）
+        // Pico接続時は$PIMAGを特別処理（磁気データ用）
         if (isPicoConnected) {
             processPicoData(data);
-            return;
+            // Pico接続時でも位置情報（NMEA）はパースする（returnしない）
         }
         
-        // F9P直接接続時のみUBXとNMEAをパース
-        if (magneticSensorEnabled) {
+        // F9P直接接続時のみUBXをパース（Pico経由では不要）
+        if (!isPicoConnected && magneticSensorEnabled) {
             ubxParser.parse(data);
         }
 
         // 受信データをバッファに追加（NMEAテキスト用）
         String received = new String(data);
         receiveBuffer.append(received);
-
+        
         // 改行で分割してNMEAセンテンスをパース
         String buffer = receiveBuffer.toString();
         int lastNewline = buffer.lastIndexOf('\n');
@@ -724,6 +708,10 @@ public class UsbGpsManager implements SerialInputOutputManager.Listener {
             for (String line : lines) {
                 line = line.trim();
                 if (line.startsWith("$")) {
+                    // $PIMAGはprocessPicoDataで処理済みなのでスキップ
+                    if (isPicoConnected && line.startsWith("$PIMAG")) {
+                        continue;
+                    }
                     nmeaParser.parseSentence(line);
                 }
             }
