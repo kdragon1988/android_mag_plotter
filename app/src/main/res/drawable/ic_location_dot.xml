@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ic_location_dot.xml - 現在位置マーカー（青い丸印）
+    
+    中心に青い円、外側に白い縁取りと半透明の青い円で構成。
+    アイコンの中心が正確な位置を示す。
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 外側の半透明円（精度範囲を示唆） -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#3300A8FF" />
+            <size android:width="32dp" android:height="32dp" />
+        </shape>
+    </item>
+    <!-- 白い縁取り -->
+    <item
+        android:left="8dp"
+        android:top="8dp"
+        android:right="8dp"
+        android:bottom="8dp">
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFF" />
+            <size android:width="16dp" android:height="16dp" />
+        </shape>
+    </item>
+    <!-- 中心の青い円 -->
+    <item
+        android:left="10dp"
+        android:top="10dp"
+        android:right="10dp"
+        android:bottom="10dp">
+        <shape android:shape="oval">
+            <solid android:color="#00A8FF" />
+            <size android:width="12dp" android:height="12dp" />
+        </shape>
+    </item>
+</layer-list>

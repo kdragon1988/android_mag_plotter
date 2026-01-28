@@ -161,7 +161,10 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
     private MapView mapView;
     private IMapController mapController;
     private Marker currentLocationMarker;
-    private List<Polygon> heatmapPolygons = new ArrayList<>();
+    // ヒートマップポリゴン（危険度別に管理：緑→黄→赤の順でオーバーレイに追加し、赤を前面に）
+    private List<Polygon> heatmapPolygonsSafe = new ArrayList<>();    // 緑（0-5μT）
+    private List<Polygon> heatmapPolygonsWarning = new ArrayList<>(); // 黄（5.1-10μT）
+    private List<Polygon> heatmapPolygonsDanger = new ArrayList<>();  // 赤（10μT超）
     
     /** 地図の初期センタリングが完了したかどうか */
     private boolean isInitialCenterSet = false;
@@ -684,9 +687,10 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         mapController = mapView.getController();
         mapController.setZoom(18.0);
 
-        // 現在位置マーカー
+        // 現在位置マーカー（青い丸印、中心が正確な位置）
         currentLocationMarker = new Marker(mapView);
         currentLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        currentLocationMarker.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_location_dot));
         currentLocationMarker.setTitle("Current Location");
         mapView.getOverlays().add(currentLocationMarker);
     }
@@ -951,14 +955,26 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
             return;
         }
 
+        // USB磁気センサー使用時はUSBの値を、そうでなければ内蔵センサーの値を使用
+        float magX, magY, magZ;
+        if (useUsbMagneticSensor && pimagDataReceived) {
+            magX = usbMagX;
+            magY = usbMagY;
+            magZ = usbMagZ;
+        } else {
+            magX = magneticValues[0];
+            magY = magneticValues[1];
+            magZ = magneticValues[2];
+        }
+        
         MeasurementPoint point = new MeasurementPoint(
                 missionId,
                 currentLocation.getLatitude(),
                 currentLocation.getLongitude(),
                 currentAccuracy,
-                magneticValues[0],
-                magneticValues[1],
-                magneticValues[2],
+                magX,
+                magY,
+                magZ,
                 currentMission.getReferenceMag(),
                 mode
         );
@@ -971,78 +987,130 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         }
     }
 
+    // ヒートマップ差分更新用：前回描画済みポイント数
+    private int lastHeatmapPointCount = 0;
+
     /**
-     * ヒートマップを更新
+     * ヒートマップを更新（差分更新でパフォーマンス最適化）
+     * 危険度が高いポイントが常に前面に表示される
      * 
      * @param points 計測ポイントリスト
      */
     private void updateHeatmap(List<MeasurementPoint> points) {
-        if (points == null || points.isEmpty() || currentMission == null) {
+        if (points == null || points.isEmpty()) {
             return;
         }
 
-        // 既存のヒートマップを削除
-        for (Polygon polygon : heatmapPolygons) {
-            mapView.getOverlays().remove(polygon);
-        }
-        heatmapPolygons.clear();
-
-        // ノイズ値でソート（低い順 → 高いノイズ値が上のレイヤーになる）
-        List<MeasurementPoint> sortedPoints = new ArrayList<>(points);
-        sortedPoints.sort((p1, p2) -> Double.compare(p1.getNoiseValue(), p2.getNoiseValue()));
-
-        // 各ポイントに円を描画（直径1m = 半径0.5m、縁をぼかすグラデーション効果）
-        for (MeasurementPoint point : sortedPoints) {
-            int baseColor = getHeatmapColor(point.getNoiseValue());
-            GeoPoint center = new GeoPoint(point.getLatitude(), point.getLongitude());
+        int currentSize = points.size();
+        
+        // 差分更新：新しいポイントのみ追加
+        if (currentSize > lastHeatmapPointCount) {
+            // 新しいポイントのみ処理
+            List<MeasurementPoint> newPoints = points.subList(lastHeatmapPointCount, currentSize);
             
-            // グラデーション効果：外側から内側へ複数の円を重ねる
-            double baseRadius = 0.5; // 半径0.5メートル（直径1m）
-            int layers = 5; // レイヤー数
-            
-            for (int layer = layers - 1; layer >= 0; layer--) {
-                // 外側ほど大きく、透明度が高い
-                double layerRadius = baseRadius * (1.0 + layer * 0.3);
-                int alpha = (int) (Color.alpha(baseColor) * (1.0 - layer * 0.2));
-                int layerColor = Color.argb(
-                        Math.max(alpha, 20),
-                        Color.red(baseColor),
-                        Color.green(baseColor),
-                        Color.blue(baseColor)
-                );
-                
-                Polygon circle = createCircle(center, layerRadius, layerColor);
-                heatmapPolygons.add(circle);
-                mapView.getOverlays().add(circle);
+            for (MeasurementPoint point : newPoints) {
+                addHeatmapPoint(point);
             }
+            
+            lastHeatmapPointCount = currentSize;
+            
+            // Z順序を再構築（緑→黄→赤→現在位置マーカーの順）
+            reorderHeatmapOverlays();
+        } else if (currentSize < lastHeatmapPointCount) {
+            // ポイントが減った場合（削除時）は全再描画
+            rebuildHeatmap(points);
         }
-
-        // 現在位置マーカーを最前面に
-        mapView.getOverlays().remove(currentLocationMarker);
-        mapView.getOverlays().add(currentLocationMarker);
 
         mapView.invalidate();
     }
 
     /**
+     * 単一のヒートマップポイントを追加
+     */
+    private void addHeatmapPoint(MeasurementPoint point) {
+        double noiseValue = point.getNoiseValue();
+        int color = getHeatmapColor(noiseValue);
+        GeoPoint center = new GeoPoint(point.getLatitude(), point.getLongitude());
+        
+        // シンプルな単一円（パフォーマンス重視）
+        Polygon circle = createCircle(center, 0.5, color);
+        
+        // 危険度別リストに追加
+        if (noiseValue <= 5.0) {
+            heatmapPolygonsSafe.add(circle);
+        } else if (noiseValue <= 10.0) {
+            heatmapPolygonsWarning.add(circle);
+        } else {
+            heatmapPolygonsDanger.add(circle);
+        }
+    }
+
+    /**
+     * ヒートマップオーバーレイのZ順序を再構築
+     * 緑→黄→赤→現在位置マーカーの順で追加し、危険値を前面に表示
+     */
+    private void reorderHeatmapOverlays() {
+        // 全ヒートマップポリゴンを一旦削除
+        for (Polygon p : heatmapPolygonsSafe) mapView.getOverlays().remove(p);
+        for (Polygon p : heatmapPolygonsWarning) mapView.getOverlays().remove(p);
+        for (Polygon p : heatmapPolygonsDanger) mapView.getOverlays().remove(p);
+        mapView.getOverlays().remove(currentLocationMarker);
+        
+        // 緑→黄→赤の順で追加（後から追加したものが前面）
+        for (Polygon p : heatmapPolygonsSafe) mapView.getOverlays().add(p);
+        for (Polygon p : heatmapPolygonsWarning) mapView.getOverlays().add(p);
+        for (Polygon p : heatmapPolygonsDanger) mapView.getOverlays().add(p);
+        
+        // 現在位置マーカーを最前面に
+        mapView.getOverlays().add(currentLocationMarker);
+    }
+
+    /**
+     * ヒートマップを完全再構築（ポイント削除時用）
+     */
+    private void rebuildHeatmap(List<MeasurementPoint> points) {
+        // 既存のヒートマップを削除
+        for (Polygon p : heatmapPolygonsSafe) mapView.getOverlays().remove(p);
+        for (Polygon p : heatmapPolygonsWarning) mapView.getOverlays().remove(p);
+        for (Polygon p : heatmapPolygonsDanger) mapView.getOverlays().remove(p);
+        heatmapPolygonsSafe.clear();
+        heatmapPolygonsWarning.clear();
+        heatmapPolygonsDanger.clear();
+        lastHeatmapPointCount = 0;
+
+        if (points == null || points.isEmpty()) {
+            return;
+        }
+
+        // 全ポイントを追加
+        for (MeasurementPoint point : points) {
+            addHeatmapPoint(point);
+        }
+        
+        lastHeatmapPointCount = points.size();
+        
+        // Z順序を再構築
+        reorderHeatmapOverlays();
+    }
+
+    /**
      * ノイズ値からヒートマップの色を取得
+     * 
+     * 閾値はゲージと統一: 0-5μT:緑, 5.1-10μT:黄, 10μT超:赤
      * 
      * @param noiseValue ノイズ値
      * @return 色（ARGB）
      */
     private int getHeatmapColor(double noiseValue) {
-        if (currentMission == null) {
-            return Color.argb(128, 0, 255, 136); // 緑
-        }
+        // ゲージと同じ固定閾値を使用
+        double safeThreshold = 5.0;
+        double dangerThreshold = 10.0;
 
-        double safeThreshold = currentMission.getSafeThreshold();
-        double dangerThreshold = currentMission.getDangerThreshold();
-
-        if (noiseValue < safeThreshold) {
-            // 安全（緑）
+        if (noiseValue <= safeThreshold) {
+            // 安全（緑）: 0-5μT
             return Color.argb(128, 0, 255, 136);
-        } else if (noiseValue < dangerThreshold) {
-            // 警告（黄）
+        } else if (noiseValue <= dangerThreshold) {
+            // 警告（黄）: 5.1-10μT
             float ratio = (float) ((noiseValue - safeThreshold) / (dangerThreshold - safeThreshold));
             int r = (int) (255 * ratio);
             int g = (int) (255 * (1 - ratio * 0.5));
@@ -1188,15 +1256,13 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
             textNoiseMax.setText(String.format(Locale.US, "%.1f", statistics.noiseMax));
             textNoiseAvg.setText(String.format(Locale.US, "%.1f", statistics.noiseAvg));
             
-            // NOISEのMAXに応じて色を変更
-            if (currentMission != null) {
-                if (statistics.noiseMax < currentMission.getSafeThreshold()) {
-                    textNoiseMax.setTextColor(getColor(R.color.status_safe));
-                } else if (statistics.noiseMax < currentMission.getDangerThreshold()) {
-                    textNoiseMax.setTextColor(getColor(R.color.status_warning));
-                } else {
-                    textNoiseMax.setTextColor(getColor(R.color.status_danger));
-                }
+            // NOISEのMAXに応じて色を変更（固定閾値: 5μT, 10μT）
+            if (statistics.noiseMax <= 5.0) {
+                textNoiseMax.setTextColor(getColor(R.color.status_safe));
+            } else if (statistics.noiseMax <= 10.0) {
+                textNoiseMax.setTextColor(getColor(R.color.status_warning));
+            } else {
+                textNoiseMax.setTextColor(getColor(R.color.status_danger));
             }
         }
     }
@@ -1208,25 +1274,20 @@ public class MeasurementActivity extends AppCompatActivity implements SensorEven
         textMagValue.setText(String.format(Locale.US, "%.1f", currentMagStrength));
         textNoiseValue.setText(String.format(Locale.US, "%.1f", currentNoise));
 
-        // ノイズレベルに応じた色分け
-        if (currentMission != null) {
-            // レベルゲージを更新
-            noiseLevelGauge.setThresholds(
-                    currentMission.getSafeThreshold(),
-                    currentMission.getDangerThreshold()
-            );
-            noiseLevelGauge.setNoiseValue(currentNoise);
-            
-            if (currentNoise < currentMission.getSafeThreshold()) {
-                textNoiseValue.setTextColor(getColor(R.color.status_safe));
-                panelStatus.setBackgroundResource(R.drawable.bg_status_safe);
-            } else if (currentNoise < currentMission.getDangerThreshold()) {
-                textNoiseValue.setTextColor(getColor(R.color.status_warning));
-                panelStatus.setBackgroundResource(R.drawable.bg_status_warning);
-            } else {
-                textNoiseValue.setTextColor(getColor(R.color.status_danger));
-                panelStatus.setBackgroundResource(R.drawable.bg_status_danger);
-            }
+        // ノイズレベルに応じた色分け（固定閾値: 5μT, 10μT）
+        // レベルゲージを更新
+        noiseLevelGauge.setThresholds(5.0, 10.0);
+        noiseLevelGauge.setNoiseValue(currentNoise);
+        
+        if (currentNoise <= 5.0) {
+            textNoiseValue.setTextColor(getColor(R.color.status_safe));
+            panelStatus.setBackgroundResource(R.drawable.bg_status_safe);
+        } else if (currentNoise <= 10.0) {
+            textNoiseValue.setTextColor(getColor(R.color.status_warning));
+            panelStatus.setBackgroundResource(R.drawable.bg_status_warning);
+        } else {
+            textNoiseValue.setTextColor(getColor(R.color.status_danger));
+            panelStatus.setBackgroundResource(R.drawable.bg_status_danger);
         }
     }
 
