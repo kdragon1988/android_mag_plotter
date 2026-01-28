@@ -53,7 +53,7 @@ Raspberry Pi Picoに**RGB LED**と**パッシブブザー**を接続し、ノイ
 
 Pico起動時に**ファミマ入店音**風のメロディを再生。デバイスの起動確認が聴覚でわかります。
 
-詳細は [`docs/202602_UPDATE_SPEC.md`](docs/202602_UPDATE_SPEC.md) を参照してください。
+詳細は [`docs/F9P+pico USBモジュール設計仕様・組み込み方法.md`](docs/F9P+pico%20USBモジュール設計仕様・組み込み方法.md) を参照してください。
 
 ---
 
